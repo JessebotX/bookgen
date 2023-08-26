@@ -1,3 +1,6 @@
-title = "Author's website"
-baseURL = "https://example.com"
 #outputDir = "./out"
+
+[index]
+title = "John Doe's website"
+author = "John Doe"
+baseURL = "https://example.com"

@@ -5,14 +5,17 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"html/template"
 	"strings"
 
-	"github.com/JessebotX/bookgen/common"
 	"github.com/JessebotX/bookgen/book"
+	"github.com/JessebotX/bookgen/common"
 )
 
 // Generate configuration file
 func GenerateHTMLSiteFromConfig(config *common.Config) error {
+	index := config.Index
+
 	// recreate output directory
 	err := os.RemoveAll(config.OutputDir)
 	if err != nil {
@@ -30,12 +33,74 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 		return err
 	}
 
+	// Get books
 	books, err := Books(config)
 	if err != nil {
 		return err
 	}
 
-	log.Println(books)
+	// read templates
+	bookTemplatePath := filepath.Join(config.ThemeDir, "book.html")
+	bookTemplate, err := template.ParseFiles(bookTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	chapterTemplatePath := filepath.Join(config.ThemeDir, "chapter.html")
+	chapterTemplate, err := template.ParseFiles(chapterTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	// create book output
+	for i, _ := range books {
+		bookItem := &books[i]
+		// get all the chapters
+		err = book.UnmarshalChapters(bookItem)
+		if err != nil {
+			return err
+		}
+
+		bookOutputDir := filepath.Join(config.OutputDir, bookItem.Slug)
+		err = os.MkdirAll(bookOutputDir, 0755)
+		if err != nil {
+			return err
+		}
+
+		// copy cover image to output
+		baseCoverPath := filepath.Base(bookItem.CoverPath)
+		err = os.Link(bookItem.CoverPath, filepath.Join(bookOutputDir, baseCoverPath))
+		if err != nil {
+			log.Println("WARN", err)
+		}
+
+		// generate book index
+		newBookIndexOutput, err := os.Create(filepath.Join(bookOutputDir, "index.html"))
+		if err != nil {
+			return err
+		}
+
+		err = bookTemplate.Execute(newBookIndexOutput, bookItem)
+		if err != nil {
+			return err
+		}
+
+		// generate chapters
+		for _, chapter := range bookItem.Chapters {
+			newChapterOutput, err := os.Create(filepath.Join(bookOutputDir, chapter.Slug))
+			if err != nil {
+				return err
+			}
+
+			err = chapterTemplate.Execute(newChapterOutput, &chapter)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	index.Books = books
+	// TODO generate site index
 
 	return nil
 }
@@ -56,21 +121,29 @@ func Books(config *common.Config) ([]common.Book, error) {
 			continue
 		}
 
-		config := common.Book{
-			Config: config,
+		bookItemDir := filepath.Join(booksDir, dir.Name())
+		bookConfig := &common.Book{
+			Config:       config,
 			LanguageCode: "en",
-			Copyright: "Copyright (c) " + config.Author,
-			License: "All rights reserved.",
-			CoverPath: filepath.Join(booksDir, dir.Name(), "cover.jpg"),
-			Slug: dir.Name(),
+			Copyright:    "Copyright (c) " + config.Index.Author,
+			License:      "All rights reserved.",
+			CoverPath:    filepath.Join(bookItemDir, "cover.jpg"),
+			IndexPath:    filepath.Join(bookItemDir, "index.md"),
+			ChaptersDir:  filepath.Join(bookItemDir, "chapters"),
+			Slug:         dir.Name(),
 		}
 		configPath := filepath.Join(booksDir, dir.Name(), "bookgen-book.toml")
-		err = book.UnmarshalBookConfig(configPath, &config)
+		err = book.UnmarshalBookConfig(configPath, bookConfig)
 		if err != nil {
 			return nil, err
 		}
 
-		books = append(books, config)
+		err := book.UnmarshalIndexBlurb(bookConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		books = append(books, *bookConfig)
 	}
 
 	return books, nil
