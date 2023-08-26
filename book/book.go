@@ -2,11 +2,11 @@ package book
 
 import (
 	"bytes"
-	"os"
 	"html/template"
-	"time"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/JessebotX/bookgen/common"
@@ -95,7 +95,7 @@ func UnmarshalChapters(book *common.Book) error {
 		}
 
 		chapter := common.Chapter{
-			Title: "[CHAPTER_TITLE]",
+			Title:  "[CHAPTER_TITLE]",
 			Config: book.Config,
 			Parent: book,
 			Slug:   strings.TrimSuffix(item.Name(), ".md"),
