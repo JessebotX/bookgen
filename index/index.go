@@ -87,7 +87,7 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 
 		// generate chapters
 		for _, chapter := range bookItem.Chapters {
-			newChapterOutput, err := os.Create(filepath.Join(bookOutputDir, chapter.Slug))
+			newChapterOutput, err := os.Create(filepath.Join(bookOutputDir, chapter.Slug + ".html"))
 			if err != nil {
 				return err
 			}

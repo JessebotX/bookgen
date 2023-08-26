@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"time"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	"github.com/JessebotX/bookgen/common"
@@ -63,7 +64,6 @@ func UnmarshalIndexBlurb(book *common.Book) error {
 	return nil
 }
 
-// TODO: Next and Previous chapters
 func UnmarshalChapters(book *common.Book) error {
 	chaptersDir := book.ChaptersDir
 	converter := goldmark.New(
@@ -98,7 +98,7 @@ func UnmarshalChapters(book *common.Book) error {
 			Title: "[CHAPTER_TITLE]",
 			Config: book.Config,
 			Parent: book,
-			Slug:   item.Name(),
+			Slug:   strings.TrimSuffix(item.Name(), ".md"),
 		}
 
 		output, err := markdownFileToHTML(filepath.Join(chaptersDir, item.Name()), converter)
@@ -130,6 +130,18 @@ func UnmarshalChapters(book *common.Book) error {
 		}
 
 		chapters = append(chapters, chapter)
+	}
+
+	// set next and prev chapters
+	totalChapters := len(chapters)
+	for i := 0; i < totalChapters; i++ {
+		if (i - 1) >= 0 {
+			chapters[i].Prev = &chapters[i-1]
+		}
+
+		if (i + 1) <= (totalChapters - 1) {
+			chapters[i].Next = &chapters[i+1]
+		}
 	}
 
 	book.Chapters = chapters

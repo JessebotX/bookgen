@@ -44,7 +44,9 @@ type Chapter struct {
 	Parent       *Book
 	Title        string
 	Content      template.HTML
-	PublishDate  time.Time
-	LastModified time.Time
-	Slug         string `toml:-`
+	PublishDate  time.Time `toml:",omitempty"`
+	LastModified time.Time `toml:",omitempty"`
+	Slug         string    `toml:-`
+	Next         *Chapter  `toml:-`
+	Prev         *Chapter  `toml:-`
 }
