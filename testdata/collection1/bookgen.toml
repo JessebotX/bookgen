@@ -1,0 +1,3 @@
+title = "Author's website"
+baseURL = "https://example.com"
+#outputDir = "./out"
