@@ -32,6 +32,7 @@ type Book struct {
 	LanguageCode     string
 	Copyright        string
 	License          string
+	Genre            string
 	ChaptersDir      string
 	Blurb            template.HTML `toml:-`
 	Slug             string        `toml:-`

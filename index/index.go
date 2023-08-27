@@ -127,12 +127,12 @@ func Books(config *common.Config) ([]common.Book, error) {
 			LanguageCode: "en",
 			Copyright:    "Copyright (c) " + config.Index.Author,
 			License:      "All rights reserved.",
-			CoverPath:    filepath.Join(bookItemDir, "cover.jpg"),
-			IndexPath:    filepath.Join(bookItemDir, "index.md"),
-			ChaptersDir:  filepath.Join(bookItemDir, "chapters"),
+			CoverPath:    "cover.jpg",
+			IndexPath:    "index.md",
+			ChaptersDir:  "chapters",
 			Slug:         dir.Name(),
 		}
-		configPath := filepath.Join(booksDir, dir.Name(), "bookgen-book.toml")
+		configPath := filepath.Join(bookItemDir, "bookgen-book.toml")
 		err = book.UnmarshalBookConfig(configPath, bookConfig)
 		if err != nil {
 			return nil, err

@@ -34,6 +34,19 @@ func UnmarshalBookConfig(path string, config *common.Book) error {
 		return err
 	}
 
+	// resolve paths
+	if config.CoverPath != "" {
+		config.CoverPath = filepath.Join(filepath.Dir(path), config.CoverPath)
+	}
+
+	if config.IndexPath != "" {
+		config.IndexPath = filepath.Join(filepath.Dir(path), config.IndexPath)
+	}
+
+	if config.ChaptersDir != "" {
+		config.ChaptersDir = filepath.Join(filepath.Dir(path), config.ChaptersDir)
+	}
+
 	return nil
 }
 
