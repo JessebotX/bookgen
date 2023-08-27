@@ -12,6 +12,38 @@ import (
 	"github.com/JessebotX/bookgen/common"
 )
 
+const RSSTemplateSource = `
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+<title>{{ .Config.Index.Title }}</title>
+<link>{{ .Config.Index.BaseURL }}</link>
+<description>Recent content for {{ .Title }}</description>
+<generator>Bookgen -- github.com/JessebotX/bookgen</generator>
+{{ with .LanguageCode }}
+<language>{{.}}</language>
+{{ end }}
+{{ with .Copyright }}
+<copyright>{{.}}</copyright>
+{{ end }}
+{{ range .Chapters }}
+<item>
+
+<title>{{ .Title }}</title>
+<link>{{ .Config.Index.BaseURL }}/{{ .Parent.Slug }}/{{ .Slug }}.html</link>
+<pubDate>{{ .PublishDate.Format "Mon, 02 Jan 2006 15:04:05 -0700" }}</pubDate>
+<guid>{{ .Config.Index.BaseURL }}/{{ .Parent.Slug }}/{{ .Slug }}.html</guid>
+<description>
+{{- with .Description }}
+{{ . }}
+{{- else -}}
+{{ .Title }}
+{{ end -}}</description>
+</item>
+{{ end }}
+</channel>
+</rss>
+`
+
 // Generate configuration file
 func GenerateHTMLSiteFromConfig(config *common.Config) error {
 	index := config.Index
@@ -42,6 +74,11 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 	// read templates
 	bookTemplatePath := filepath.Join(config.ThemeDir, "book.html")
 	bookTemplate, err := template.ParseFiles(bookTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	rssTemplate, err := template.New("rss").Parse(RSSTemplateSource)
 	if err != nil {
 		return err
 	}
@@ -81,6 +118,17 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 		}
 
 		err = bookTemplate.Execute(newBookIndexOutput, bookItem)
+		if err != nil {
+			return err
+		}
+
+		// Create rss feed
+		newRssOutput, err := os.Create(filepath.Join(bookOutputDir, "rss.xml"))
+		if err != nil {
+			return err
+		}
+
+		err = rssTemplate.Execute(newRssOutput, bookItem)
 		if err != nil {
 			return err
 		}
@@ -125,9 +173,6 @@ func Books(config *common.Config) ([]common.Book, error) {
 		bookConfig := &common.Book{
 			Config:       config,
 			LanguageCode: "en",
-			Copyright:    "Copyright (c) " + config.Index.Author,
-			License:      "All rights reserved.",
-			CoverPath:    "cover.jpg",
 			IndexPath:    "index.md",
 			ChaptersDir:  "chapters",
 			Slug:         dir.Name(),
