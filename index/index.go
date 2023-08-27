@@ -10,6 +10,7 @@ import (
 
 	"github.com/JessebotX/bookgen/book"
 	"github.com/JessebotX/bookgen/common"
+	"github.com/bmaupin/go-epub"
 )
 
 const RSSTemplateSource = `
@@ -133,7 +134,22 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 			return err
 		}
 
-		// generate chapters
+		// generate chapters and epub
+		e := epub.NewEpub(bookItem.Title)
+		e.SetAuthor(config.Index.Author)
+
+		if bookItem.CoverPath != "" {
+			coverImage, err := e.AddImage(bookItem.CoverPath, "")
+			if err != nil {
+				return err
+			} else {
+				e.SetCover(coverImage, "")
+			}
+		}
+
+		indexContent := "<h1>" + bookItem.Title + "</h1>" + string(bookItem.Blurb)
+		e.AddSection(indexContent, bookItem.Title, "", "")
+
 		for _, chapter := range bookItem.Chapters {
 			newChapterOutput, err := os.Create(filepath.Join(bookOutputDir, chapter.Slug + ".html"))
 			if err != nil {
@@ -144,6 +160,14 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 			if err != nil {
 				return err
 			}
+
+			chapterBody := "<h1>" + string(chapter.Title) + "</h1>" + string(chapter.Content)
+			e.AddSection(chapterBody, chapter.Title, "", "")
+		}
+
+		err = e.Write(filepath.Join(bookOutputDir, bookItem.Slug + ".epub"))
+		if err != nil {
+			return err
 		}
 	}
 
