@@ -1,11 +1,11 @@
 package index
 
 import (
+	"html/template"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
-	"html/template"
 	"strings"
 
 	"github.com/JessebotX/bookgen/book"
@@ -151,7 +151,7 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 		e.AddSection(indexContent, bookItem.Title, "", "")
 
 		for _, chapter := range bookItem.Chapters {
-			newChapterOutput, err := os.Create(filepath.Join(bookOutputDir, chapter.Slug + ".html"))
+			newChapterOutput, err := os.Create(filepath.Join(bookOutputDir, chapter.Slug+".html"))
 			if err != nil {
 				return err
 			}
@@ -165,7 +165,7 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 			e.AddSection(chapterBody, chapter.Title, "", "")
 		}
 
-		err = e.Write(filepath.Join(bookOutputDir, bookItem.Slug + ".epub"))
+		err = e.Write(filepath.Join(bookOutputDir, bookItem.Slug+".epub"))
 		if err != nil {
 			return err
 		}
