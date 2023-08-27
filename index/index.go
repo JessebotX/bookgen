@@ -133,12 +133,12 @@ func Books(config *common.Config) ([]common.Book, error) {
 			Slug:         dir.Name(),
 		}
 		configPath := filepath.Join(bookItemDir, "bookgen-book.toml")
-		err = book.UnmarshalBookConfig(configPath, bookConfig)
+		err = book.Unmarshal(configPath, bookConfig)
 		if err != nil {
 			return nil, err
 		}
 
-		err := book.UnmarshalIndexBlurb(bookConfig)
+		err := book.UnmarshalBlurb(bookConfig)
 		if err != nil {
 			return nil, err
 		}

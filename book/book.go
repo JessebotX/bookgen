@@ -23,7 +23,7 @@ type MarkdownHTMLResult struct {
 }
 
 // Unmarshal a single-book configuration
-func UnmarshalBookConfig(path string, config *common.Book) error {
+func Unmarshal(path string, config *common.Book) error {
 	source, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func UnmarshalBookConfig(path string, config *common.Book) error {
 	return nil
 }
 
-func UnmarshalIndexBlurb(book *common.Book) error {
+func UnmarshalBlurb(book *common.Book) error {
 	converter := goldmark.New(
 		goldmark.WithExtensions(
 			extension.GFM,

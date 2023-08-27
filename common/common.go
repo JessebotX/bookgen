@@ -26,6 +26,7 @@ type Index struct {
 type Book struct {
 	Config           *Config
 	Title            string
+	Status           string
 	ShortDescription string
 	CoverPath        string
 	IndexPath        string
@@ -44,6 +45,7 @@ type Chapter struct {
 	Config       *Config
 	Parent       *Book
 	Title        string
+	Description  string
 	Content      template.HTML
 	PublishDate  time.Time `toml:",omitempty"`
 	LastModified time.Time `toml:",omitempty"`
