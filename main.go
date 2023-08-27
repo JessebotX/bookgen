@@ -1,16 +1,28 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 
 	"github.com/JessebotX/bookgen/common"
 	"github.com/JessebotX/bookgen/index"
 )
 
+const Version = "0.1.0"
+
 func main() {
-	// TODO: remove hardcoding and read from os.Args
-	configPath := "./testdata/collection1"
+	if len(os.Args) < 2 {
+		log.Fatal("Please provide directory containing a bookgen.toml")
+	}
+
+	if os.Args[1] == "-V" {
+		fmt.Println("bookgen", Version)
+		return
+	}
+
+	configPath := os.Args[1]
 
 	// set default values in main bookgen config
 	// NOTE: paths are relative to the directory of bookgen.toml
@@ -25,8 +37,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	printVerbose(config)
 
 	err = index.GenerateHTMLSiteFromConfig(config)
 	if err != nil {
