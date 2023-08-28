@@ -10,7 +10,7 @@ import (
 	"github.com/JessebotX/bookgen/index"
 )
 
-const Version = "0.1.2"
+const Version = "0.1.3"
 
 func main() {
 	if len(os.Args) < 2 {

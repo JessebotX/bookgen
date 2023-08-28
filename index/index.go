@@ -47,7 +47,7 @@ const RSSTemplateSource = `
 
 // Generate configuration file
 func GenerateHTMLSiteFromConfig(config *common.Config) error {
-	index := config.Index
+	index := &config.Index
 
 	// recreate output directory
 	err := os.RemoveAll(config.OutputDir)
@@ -67,7 +67,7 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 	}
 
 	// Get books
-	books, err := Books(config)
+	err = UnmarshalBooks(config)
 	if err != nil {
 		return err
 	}
@@ -91,6 +91,7 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 	}
 
 	// create book output
+	books := index.Books
 	for i, _ := range books {
 		bookItem := &books[i]
 		bookSourceDir := filepath.Join(config.BooksDir, bookItem.Slug)
@@ -173,19 +174,18 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 		}
 	}
 
-	index.Books = books
 	// TODO generate site index
 
 	return nil
 }
 
 // Retrieve all books
-func Books(config *common.Config) ([]common.Book, error) {
+func UnmarshalBooks(config *common.Config) (error) {
 	booksDir := config.BooksDir
 
 	dirs, err := os.ReadDir(booksDir)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	books := make([]common.Book, 0)
@@ -206,18 +206,20 @@ func Books(config *common.Config) ([]common.Book, error) {
 		configPath := filepath.Join(bookItemDir, "bookgen-book.toml")
 		err = book.Unmarshal(configPath, bookConfig)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		err := book.UnmarshalBlurb(bookConfig)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		books = append(books, *bookConfig)
 	}
 
-	return books, nil
+	config.Index.Books = books
+
+	return nil
 }
 
 // Copy every item in the static files directory to the output
