@@ -1,8 +1,4 @@
 # Bookgen
-Bookgen is a static site generator designed for authors who want to distribute their collection of Markdown-based written works as a standalone static website. It additionally creates RSS feeds---for readers to keep up to date with new chapters---and ebook (`.epub`) files---allowing readers to download your DRM-free written works for offline reading.
-
-Bookgen is a cross-platform command-line interface application. It has only been tested on Windows and Linux.
-
 ## COPYING
 Copyright (C) 2023 Free Software Foundation, Inc.
 
@@ -10,37 +6,50 @@ Copyright (C) 2023 Free Software Foundation, Inc.
 >
 > (a) The FSF’s Back-Cover Text is: “You have the freedom to copy and modify this GNU manual.”
 
+## Overview
+Bookgen is a static site generator designed for authors who want to distribute their collection of Markdown-based written works as a standalone static website. It additionally creates RSS feeds---for readers to keep up to date with new chapters---and ebook (`.epub`) files---allowing readers to download your DRM-free written works for offline reading.
+
+Bookgen is a cross-platform command-line interface application. It has only been tested on Windows and Linux.
+
 ## Getting Started
 1. Install Bookgen for your preferred operating system, or by using the `go` command line tool
 2. [ ] TODO
 
 ## Bookgen Command-Line Interface Overview
-```bash
-bookgen
-```
-Generates a full static website along with `.epub` files and RSS feeds. _User must be currently in the root folder of their bookgen project._
+* ```bash
+  bookgen
+  ```
+  
+  Generates a full static website along with `.epub` files and RSS feeds. _User must be currently in the root folder of their bookgen project._
+* ```bash
+  bookgen new <project_name>
+  ```
+  **REQUIRED FIELD**: `<project_name>`
 
-```bash
-bookgen new <project_name>
-```
-* `<project_name>` (REQUIRED)
+  Bootstrap a new bookgen project, using `<project_name>` as the name of the root directory.
+* ```bash
+  bookgen help
+  ```
+  
+  ```bash
+  bookgen -h
+  ```
+  
+  ```bash
+  bookgen --help
+  ```
 
-Bootstrap a new bookgen project, using `<project_name>` as the name of the root directory.
-
-```bash
-bookgen help
-# OR
-bookgen -h
-# OR
-bookgen --help
-```
-Print usage information.
-
-```bash
-bookgen version
-# OR
-bookgen -V
-# OR
-bookgen --version
-```
-Print the current version of the application
+  Print usage information.
+* ```bash
+  bookgen version
+  ```
+  
+  ```bash
+  bookgen -V
+  ```
+  
+  ```bash
+  bookgen --version
+  ```
+  
+  Print the current version of the application
