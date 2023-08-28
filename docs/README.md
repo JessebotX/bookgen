@@ -28,28 +28,28 @@ bookgen new <project_name>
 * **REQUIRED FIELD**: `<project_name>`
 * Bootstrap a new bookgen project, using `<project_name>` as the name of the root directory.
 
-  ```bash
-  bookgen help
-  ```
+```bash
+bookgen help
+```
 
-  ```bash
-  bookgen -h
-  ```
+```bash
+bookgen -h
+```
 
-  ```bash
-  bookgen --help
-  ```
+```bash
+bookgen --help
+```
 * Printing usage information
 
-  ```bash
-  bookgen version
-  ```
+```bash
+bookgen version
+```
 
-  ```bash
-  bookgen -V
-  ```
+```bash
+bookgen -V
+```
 
-  ```bash
-  bookgen --version
-  ```
+```bash
+bookgen --version
+```
 * Print version of application
