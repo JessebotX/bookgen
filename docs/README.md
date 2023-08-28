@@ -13,43 +13,43 @@ Bookgen is a cross-platform command-line interface application. It has only been
 
 ## Getting Started
 1. Install Bookgen for your preferred operating system, or by using the `go` command line tool
-2. [ ] TODO
+2. Create a new boo
 
 ## Bookgen Command-Line Interface Overview
-* ```bash
-  bookgen
-  ```
-  
-  Generates a full static website along with `.epub` files and RSS feeds. _User must be currently in the root folder of their bookgen project._
-* ```bash
-  bookgen new <project_name>
-  ```
-  **REQUIRED FIELD**: `<project_name>`
 
-  Bootstrap a new bookgen project, using `<project_name>` as the name of the root directory.
-* ```bash
+```bash
+bookgen
+```
+* Generates a full static website along with `.epub` files and RSS feeds. _User must be currently in the root folder of their bookgen project._
+
+```bash
+bookgen new <project_name>
+```
+* **REQUIRED FIELD**: `<project_name>`
+* Bootstrap a new bookgen project, using `<project_name>` as the name of the root directory.
+
+  ```bash
   bookgen help
   ```
-  
+
   ```bash
   bookgen -h
   ```
-  
+
   ```bash
   bookgen --help
   ```
+* Printing usage information
 
-  Print usage information.
-* ```bash
+  ```bash
   bookgen version
   ```
-  
+
   ```bash
   bookgen -V
   ```
-  
+
   ```bash
   bookgen --version
   ```
-  
-  Print the current version of the application
+* Print version of application
