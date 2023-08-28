@@ -72,7 +72,24 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 		return err
 	}
 
-	// read templates
+	// create site index
+	indexTemplatePath := filepath.Join(config.ThemeDir, "index.html")
+	indexTemplate, err := template.ParseFiles(indexTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	newIndexOutput, err := os.Create(filepath.Join(config.OutputDir, "index.html"))
+	if err != nil {
+		return err
+	}
+
+	err = indexTemplate.Execute(newIndexOutput, index)
+	if err != nil {
+		return err
+	}
+
+	// read book templates
 	bookTemplatePath := filepath.Join(config.ThemeDir, "book.html")
 	bookTemplate, err := template.ParseFiles(bookTemplatePath)
 	if err != nil {
