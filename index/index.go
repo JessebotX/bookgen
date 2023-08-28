@@ -93,6 +93,8 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 	// create book output
 	for i, _ := range books {
 		bookItem := &books[i]
+		bookSourceDir := filepath.Join(config.BooksDir, bookItem.Slug)
+
 		// get all the chapters
 		err = book.UnmarshalChapters(bookItem)
 		if err != nil {
@@ -107,7 +109,7 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 
 		// copy cover image to output
 		baseCoverPath := filepath.Base(bookItem.CoverPath)
-		err = os.Link(bookItem.CoverPath, filepath.Join(bookOutputDir, baseCoverPath))
+		err = os.Link(filepath.Join(bookSourceDir, bookItem.CoverPath), filepath.Join(bookOutputDir, baseCoverPath))
 		if err != nil {
 			log.Println("WARN", err)
 		}
@@ -139,7 +141,7 @@ func GenerateHTMLSiteFromConfig(config *common.Config) error {
 		e.SetAuthor(config.Index.Author)
 
 		if bookItem.CoverPath != "" {
-			coverImage, err := e.AddImage(bookItem.CoverPath, "")
+			coverImage, err := e.AddImage(filepath.Join(bookSourceDir, bookItem.CoverPath), "")
 			if err != nil {
 				return err
 			} else {
