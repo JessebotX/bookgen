@@ -14,7 +14,8 @@ coverPath = "./cover.png"
 languageCode = "en"
 
 # author name
-author  = "John Doe"
+[author]
+name  = "John Doe"
 # a short "about me" of the author
 bio     = """
 John Doe is the man responsible for all written works in the 15th century.

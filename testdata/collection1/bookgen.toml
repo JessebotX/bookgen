@@ -7,7 +7,7 @@
 # where to put static assets
 #staticDir = "./static"
 
-[index] # main site index settings
+[collection] # main site index settings
 # the main site title
 title   = "Library"
 # the base domain name url (important for RSS feeds)
