@@ -1,0 +1,30 @@
+# Directory containing chapters and static assets related to the book (RELATIVE TO ROOT OF BOOK DIRECTORY)
+#chaptersDir = "./chapters"
+
+title = "Book Title"
+# One or two sentences describing what the book is about
+shortDescription = "A very short description."
+# Genre of the book
+genre = "Contemporary"
+# The current status of the book, whether it has been completed, currently ongoing, on hiatus, or dropped
+status = "On Hiatus"
+# Path to cover image (RELATIVE TO ROOT OF BOOK DIRECTORY)
+coverPath = "./cover.png"
+# Book language code
+languageCode = "en"
+
+# author name
+author  = "John Doe"
+# a short "about me" of the author
+bio     = """
+John Doe is the man responsible for all written works in the 15th century.
+"""
+
+# You're able to specify as many ways to donate as you want
+[[author.donation]]
+name = "Patreon"
+link = "https://patreon.com"
+
+[[author.donation]]
+name = "Bitcoin"
+link = "1234567890qwertyuiopasdfghjklzxcvbnm"
