@@ -13,8 +13,9 @@ import (
 )
 
 type Collection struct {
+	Root         string `toml:-`
 	BooksDir     string `toml:"booksDir"`
-	ThemeDir     string `toml:"themeDir"`
+	LayoutDir    string `toml:"layoutDir"`
 	OutputDir    string `toml:"outputDir"`
 	StaticDir    string `toml:"staticDir"`
 	Title        string `toml:"title"`
@@ -35,16 +36,16 @@ type Book struct {
 	LanguageCode     string        `toml:"languageCode,omitempty"`
 	Copyright        string        `toml:"copyright,omitempty"`
 	License          string        `toml:"license,omitempty"`
+	ChaptersDir      string        `toml:"chaptersDir"`
 	Blurb            template.HTML `toml:-`
 	Chapters         []Chapter     `toml:-`
 	Collection       *Collection   `toml:-`
-	ChaptersDir      string        `toml:-`
 }
 
 type Author struct {
-	Name     string `toml:"name"`
-	Bio      string `toml:"bio,omitempty"`
-	Donation []Donation
+	Name   string `toml:"name"`
+	Bio    string `toml:"bio,omitempty"`
+	Donate []Donation
 }
 
 type Donation struct {
@@ -65,5 +66,5 @@ type Chapter struct {
 }
 
 func (c Chapter) SlugHTML() string {
-	return ID + ".html"
+	return c.ID + ".html"
 }

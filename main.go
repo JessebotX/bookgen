@@ -7,20 +7,20 @@ import (
 	"log"
 	"os"
 
-	"github.com/JessebotX/bookgen/config"
+	"github.com/JessebotX/bookgen/collection"
 )
 
 func init() {
-	log.Println("Hello, world!")
+	if len(os.Args) < 2 {
+		log.Fatal("Missing argument.")
+	}
 }
 
 func main() {
-	config := config.Bookgen{
-		BooksDir:  "./src",
-		StaticDir: "./static",
-		ThemeDir:  "./theme",
-		OutputDir: "./out",
+	collection, err := collection.Create(os.Args[1])
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	
+	log.Printf("%#v\n", *collection)
 }
