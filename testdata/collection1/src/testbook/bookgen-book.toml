@@ -2,16 +2,14 @@
 #chaptersDir = "./chapters"
 
 title = "Book Title"
-# One or two sentences describing what the book is about
+mirrors = ["https://mirrorwebsite.com/testbooklet", "https://anothermirrorwebsite.net/testbooklet"]
 shortDescription = "A very short description."
-# Genre of the book
 genre = "Contemporary"
-# The current status of the book, whether it has been completed, currently ongoing, on hiatus, or dropped
 status = "On Hiatus"
-# Path to cover image (RELATIVE TO ROOT OF BOOK DIRECTORY)
 coverPath = "./cover.png"
-# Book language code
 languageCode = "en"
+copyright = "Copyright John Doe"
+license = "CC0"
 
 # author name
 [author]
@@ -22,10 +20,15 @@ John Doe is the man responsible for all written works in the 15th century.
 """
 
 # You're able to specify as many ways to donate as you want
-[[author.donation]]
+[[author.donate]]
 name = "Patreon"
 link = "https://patreon.com"
 
-[[author.donation]]
+[[author.donate]]
+name = "Paypal"
+link = "https://paypal.com"
+
+[[author.donate]]
 name = "Bitcoin"
 link = "1234567890qwertyuiopasdfghjklzxcvbnm"
+nonLinkItem = true
