@@ -5,6 +5,9 @@ package main
 
 import (
 	"log"
+	"os"
+
+	"github.com/JessebotX/bookgen/config"
 )
 
 func init() {
@@ -12,5 +15,12 @@ func init() {
 }
 
 func main() {
-	log.Println("Hello, world!")
+	config := config.Bookgen{
+		BooksDir:  "./src",
+		StaticDir: "./static",
+		ThemeDir:  "./theme",
+		OutputDir: "./out",
+	}
+
+	
 }

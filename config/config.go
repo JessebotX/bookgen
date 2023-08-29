@@ -12,15 +12,11 @@ import (
 	"time"
 )
 
-type Bookgen struct {
-	BooksDir   string
-	ThemeDir   string
-	OutputDir  string
-	StaticDir  string
-	Collection *Collection
-}
-
 type Collection struct {
+	BooksDir     string `toml:"booksDir"`
+	ThemeDir     string `toml:"themeDir"`
+	OutputDir    string `toml:"outputDir"`
+	StaticDir    string `toml:"staticDir"`
 	Title        string `toml:"title"`
 	BaseURL      string `toml:"baseURL,omitempty"`
 	LanguageCode string `toml:"languageCode,omitempty"`
@@ -28,20 +24,21 @@ type Collection struct {
 }
 
 type Book struct {
-	Title            string      `toml:"title"`
-	Author           Author      `toml:"author,omitempty"`
-	Mirrors          []string    `toml:"mirrors,omitempty"`
-	ShortDescription string      `toml:"shortDescription,omitempty"`
-	Genre            string      `toml:"genre,omitempty"`
-	Status           string      `toml:"status,omitempty"`
-	CoverPath        string      `toml:"coverPath,omitempty"`
-	LanguageCode     string      `toml:"languageCode,omitempty"`
-	Copyright        string      `toml:"copyright,omitempty"`
-	License          string      `toml:"license,omitempty"`
-	Blurb            string      `toml-`
-	Chapters         []Chapter   `toml:-`
-	Collection       *Collection `toml:-`
-	ChaptersDir      string      `toml:-`
+	ID               string        `toml:"id,omitempty"`
+	Title            string        `toml:"title"`
+	Author           Author        `toml:"author,omitempty"`
+	Mirrors          []string      `toml:"mirrors,omitempty"`
+	ShortDescription string        `toml:"shortDescription,omitempty"`
+	Genre            string        `toml:"genre,omitempty"`
+	Status           string        `toml:"status,omitempty"`
+	CoverPath        string        `toml:"coverPath,omitempty"`
+	LanguageCode     string        `toml:"languageCode,omitempty"`
+	Copyright        string        `toml:"copyright,omitempty"`
+	License          string        `toml:"license,omitempty"`
+	Blurb            template.HTML `toml:-`
+	Chapters         []Chapter     `toml:-`
+	Collection       *Collection   `toml:-`
+	ChaptersDir      string        `toml:-`
 }
 
 type Author struct {
@@ -57,16 +54,16 @@ type Donation struct {
 }
 
 type Chapter struct {
+	ID           string
 	Title        string
 	Description  string
 	Published    time.Time
 	LastModified time.Time
-	Content      string
+	Content      template.HTML
 	Parent       *Book
 	Collection   *Collection
-	ID           string
 }
 
-func (c Chapter) ContentHTML() template.HTML {
-	return template.HTML(c.Content)
+func (c Chapter) SlugHTML() string {
+	return ID + ".html"
 }
