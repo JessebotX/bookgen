@@ -50,9 +50,7 @@ const BookDefaultTemplate = `
 
     <main>
       {{ if not (eq .CoverPath "") }}
-      <div>
-        <img src="{{ .CoverPath }}" alt="cover image for {{ .Title }}">
-      </div>
+      <img src="{{ .CoverPath }}" alt="cover image for {{ .Title }}" style="display:block;">
       {{ end }}
 
       <article name="about">
@@ -68,11 +66,11 @@ const BookDefaultTemplate = `
         <li>
           <a href="./rss.xml">Follow RSS feed for updates</a>
         </li>
-        <li>{{ .Genre }}</li>
-        <li>{{ .Status }}</li>
+        <li>Genre: {{ .Genre }}</li>
+        <li>Status: {{ .Status }}</li>
         {{ with .Mirrors }}
         <li>
-          Mirrors
+          Mirrors:
           <ul>
             {{ range . }}
             <li>
@@ -84,18 +82,89 @@ const BookDefaultTemplate = `
         {{ end }}
       </ul>
 
+      {{ with .Author -}}
+      <article name="about the author">
+        <h2>About {{ .Name }}</h2>
+        {{ .Bio }}
+
+        {{ with .Donate -}}
+        <ul>
+          {{ range . -}}
+          <li>
+            {{ if .NonLinkItem -}}
+            {{ .Name }}: {{ .Link }}
+            {{- else -}}
+            <a href="{{ .Link }}">{{ .Name }}</a>
+            {{- end }}
+          </li>
+          {{- end }}
+        </ul>
+        {{- end }}
+      </article>
+      {{- end }}
+
       <h2>Table of Contents</h2>
-      <ol>
-        {{ range .Chapters }}
-        <li>
-          <a href="{{ .SlugHTML }}">{{ .Title }}</a>
-        </li>
-        {{ end }}
-      </ol>
+      <nav>
+        <ol>
+          {{ range .Chapters }}
+          <li>
+            <a href="{{ .SlugHTML }}">{{ .Title }}</a>
+          </li>
+          {{ end }}
+        </ol>
+      </nav>
     </main>
 
     <footer>
       {{ .Copyright }}. Licensed under {{ .License }}
+    </footer>
+  </body>
+</html>
+`
+
+const ChapterDefaultTemplate = `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{{ .Title }}</title>
+  </head>
+  <body>
+    <header>
+      <h1>{{ .Title }}</h1>
+      <a href="index.html"><h2>{{ .Parent.Title }}</h2></a>
+      {{ if (or (not .Published.IsZero) (not .LastModified.IsZero)) -}}
+      <ul>
+        {{ if not .Published.IsZero -}}
+        <li>Published {{ .Published.Format "January 2 2006 3:04 PM PST" }}</li>
+        {{- end }}
+        {{ if not .LastModified.IsZero -}}
+        <li>Last Modified {{ .LastModified.Format "January 2 2006 3:04 PM PST" }}</li>
+        {{- end }}
+      </ul>
+      {{- end }}
+
+      {{ with .Description -}}
+      {{ .Description }}
+      {{- end }}
+    </header>
+
+    <main>
+      {{ .Content }}
+    </main>
+
+    <footer>
+      <nav>
+        {{ with .Prev -}}
+        <a href="{{ .SlugHTML }}">Previous: {{ .Title }}</a>
+        {{- end }}
+        {{ with .Next -}}
+        <a href="{{ .SlugHTML }}">Next: {{ .Title }}</a>
+        {{- end }}
+      </nav>
+      {{ .Parent.Copyright }}. Licensed under {{ .Parent.License }}
     </footer>
   </body>
 </html>

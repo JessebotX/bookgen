@@ -5,11 +5,13 @@ package renderer
 
 import (
 	"html/template"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/JessebotX/bookgen/config"
+	"github.com/bmaupin/go-epub"
 )
 
 func BuildSite(collection *config.Collection) error {
@@ -28,15 +30,23 @@ func BuildSite(collection *config.Collection) error {
 	}
 
 	// read book and chapter templates
-	var bookTemplate *template.Template
 	bookTemplatePath := filepath.Join(resolvedLayoutDir, "book.html")
+
+	bookTemplate := template.Must(template.New("book").Parse(BookDefaultTemplate))
 	if exists(bookTemplatePath) {
 		bookTemplate, err = template.ParseFiles(bookTemplatePath)
 		if err != nil {
 			return err
 		}
-	} else {
-		bookTemplate = template.Must(template.New("book").Parse(BookDefaultTemplate))
+	}
+
+	chapterTemplatePath := filepath.Join(resolvedLayoutDir, "chapter.html")
+	chapterTemplate := template.Must(template.New("chapter").Parse(ChapterDefaultTemplate))
+	if exists(chapterTemplatePath) {
+		bookTemplate, err = template.ParseFiles(chapterTemplatePath)
+		if err != nil {
+			return err
+		}
 	}
 
 	rssTemplate := template.Must(template.New("rss").Parse(RSSTemplate))
@@ -49,9 +59,38 @@ func BuildSite(collection *config.Collection) error {
 			return err
 		}
 
+		// init epub building
+		e := epub.NewEpub(bk.Title)
+		e.SetAuthor(bk.Author.Name)
+
+		blurbBody := "<h1>" + bk.Title + "</h1>" + string(bk.Blurb)
+		e.AddSection(blurbBody, bk.Title, "", "")
+
+		// cover image
+		resolvedCoverPath := filepath.Join(bk.Root, bk.CoverPath)
+		if bk.CoverPath != "" && exists(resolvedCoverPath) {
+			log.Println("Found cover")
+			outputCoverPath := filepath.Join(bookOutputDir, bk.CoverPath)
+			err = os.Link(resolvedCoverPath, outputCoverPath)
+			if err != nil {
+				return err
+			}
+
+			coverImageEpubPath, err := e.AddImage(resolvedCoverPath, "")
+			if err != nil {
+				return err
+			}
+			e.SetCover(coverImageEpubPath, "")
+		}
+
 		// static assets in book
 		for _, assetPath := range bk.StaticAssets {
-			resolvedPath := filepath.Join(bookOutputDir, strings.TrimPrefix(assetPath, bk.Root))
+			_, err = e.AddImage(assetPath, "")
+			if err != nil {
+				return err
+			}
+
+			resolvedPath := filepath.Join(bookOutputDir, strings.TrimPrefix(assetPath, filepath.Join(bk.Root, bk.ChaptersDir)))
 			err = os.MkdirAll(filepath.Dir(resolvedPath), 0755)
 			if err != nil {
 				return err
@@ -81,6 +120,27 @@ func BuildSite(collection *config.Collection) error {
 		}
 
 		err = rssTemplate.Execute(rssXML, &bk)
+		if err != nil {
+			return err
+		}
+
+		// chapters
+		for _, chapter := range bk.Chapters {
+			chapterFile, err := os.Create(filepath.Join(bookOutputDir, chapter.SlugHTML()))
+			if err != nil {
+				return err
+			}
+
+			err = chapterTemplate.Execute(chapterFile, &chapter)
+			if err != nil {
+				return err
+			}
+
+			sectionBody := "<h1>" + chapter.Title + "</h1>" + string(chapter.Content)
+			e.AddSection(sectionBody, chapter.Title, "", "")
+		}
+
+		err = e.Write(filepath.Join(bookOutputDir, bk.ID+".epub"))
 		if err != nil {
 			return err
 		}

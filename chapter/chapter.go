@@ -5,6 +5,7 @@ package chapter
 
 import (
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/JessebotX/bookgen/config"
@@ -16,7 +17,7 @@ const DateTimeLayout = "2006-01-02T15:04:05-07:00"
 
 func Create(path string, book *config.Book, converter goldmark.Markdown) (*config.Chapter, error) {
 	chapter := config.Chapter{
-		ID:         filepath.Base(path),
+		ID:         strings.TrimSuffix(filepath.Base(path), ".md"),
 		Parent:     book,
 		Collection: book.Collection,
 	}
@@ -31,7 +32,7 @@ func Create(path string, book *config.Book, converter goldmark.Markdown) (*confi
 	if metadata["title"] != nil {
 		chapter.Title = metadata["title"].(string)
 	} else {
-		chapter.Title = filepath.Base(path) // default title = filename
+		chapter.Title = chapter.ID // title = filename
 	}
 
 	if metadata["description"] != nil {
