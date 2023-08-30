@@ -25,6 +25,7 @@ type Collection struct {
 }
 
 type Book struct {
+	Root             string        `toml:-`
 	ID               string        `toml:"id,omitempty"`
 	Title            string        `toml:"title"`
 	Author           Author        `toml:"author,omitempty"`
@@ -39,6 +40,7 @@ type Book struct {
 	ChaptersDir      string        `toml:"chaptersDir"`
 	Blurb            template.HTML `toml:-`
 	Chapters         []Chapter     `toml:-`
+	StaticAssets     []string      `toml:-`
 	Collection       *Collection   `toml:-`
 }
 
@@ -63,6 +65,8 @@ type Chapter struct {
 	Content      template.HTML
 	Parent       *Book
 	Collection   *Collection
+	Next         *Chapter
+	Prev         *Chapter
 }
 
 func (c Chapter) SlugHTML() string {

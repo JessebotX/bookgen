@@ -6,20 +6,20 @@ package book
 
 import (
 	"html/template"
+	"io/fs"
 	"os"
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+	"github.com/JessebotX/bookgen/chapter"
 	"github.com/JessebotX/bookgen/config"
 	"github.com/JessebotX/bookgen/renderer"
 	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark-meta"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/parser"
 )
 
-func Create(directory string, collection *config.Collection) (*config.Book, error) {
+func Create(directory string, collection *config.Collection, converter goldmark.Markdown) (*config.Book, error) {
 	book := config.Book{
+		Root:        directory,
 		ID:          filepath.Base(directory),
 		Collection:  collection,
 		ChaptersDir: "./chapters",
@@ -37,27 +37,52 @@ func Create(directory string, collection *config.Collection) (*config.Book, erro
 	}
 
 	// get blurb
-	converter := goldmark.New(
-		goldmark.WithExtensions(
-			extension.GFM,
-			extension.DefinitionList,
-			extension.Footnote,
-			extension.Typographer,
-			meta.Meta,
-		),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-			parser.WithAttribute(),
-		),
-		goldmark.WithRendererOptions(),
-	)
-
 	book.Blurb, err = getBlurb(filepath.Join(directory, "index.md"), converter)
 	if err != nil {
 		return nil, err
 	}
 
+	err = unmarshalChapters(&book, converter)
+	if err != nil {
+		return nil, err
+	}
+
 	return &book, nil
+}
+
+func unmarshalChapters(book *config.Book, converter goldmark.Markdown) error {
+	resolvedChaptersDir := filepath.Join(book.Root, book.ChaptersDir)
+
+	chapters := make([]config.Chapter, 0)
+	err := filepath.WalkDir(
+		resolvedChaptersDir,
+		func(path string, dir fs.DirEntry, err error) error {
+			if dir.IsDir() {
+				return nil
+			}
+
+			if filepath.Ext(path) != ".md" {
+				book.StaticAssets = append(book.StaticAssets, path)
+				return nil
+			}
+
+			chapter, err := chapter.Create(path, book, converter)
+			if err != nil {
+				return err
+			}
+			chapters = append(chapters, *chapter)
+
+			return nil
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	chapter.UnmarshalNextPrev(chapters)
+	book.Chapters = chapters
+
+	return nil
 }
 
 func getBlurb(path string, converter goldmark.Markdown) (template.HTML, error) {

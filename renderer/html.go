@@ -13,8 +13,8 @@ import (
 	"github.com/yuin/goldmark/parser"
 )
 
-func MarkdownFileToHTML(filepath string, converter goldmark.Markdown) (template.HTML, map[string]interface{}, error) {
-	source, err := os.ReadFile(filepath)
+func MarkdownFileToHTML(filePath string, converter goldmark.Markdown) (template.HTML, map[string]interface{}, error) {
+	source, err := os.ReadFile(filePath)
 	if err != nil {
 		return template.HTML(""), nil, err
 	}

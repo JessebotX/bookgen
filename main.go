@@ -8,6 +8,11 @@ import (
 	"os"
 
 	"github.com/JessebotX/bookgen/collection"
+	"github.com/JessebotX/bookgen/renderer"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark-meta"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
 )
 
 func init() {
@@ -17,10 +22,28 @@ func init() {
 }
 
 func main() {
-	collection, err := collection.Create(os.Args[1])
+	converter := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,
+			extension.DefinitionList,
+			extension.Footnote,
+			extension.Typographer,
+			meta.Meta,
+		),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+			parser.WithAttribute(),
+		),
+		goldmark.WithRendererOptions(),
+	)
+
+	collection, err := collection.Create(os.Args[1], converter)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("%#v\n", *collection)
+	err = renderer.BuildSite(collection)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
