@@ -32,9 +32,41 @@ const RSSTemplate = `
 </rss>
 `
 
+const CollectionDefaultTemplate = `
+<!DOCTYPE html>
+<html lang="{{ .LanguageCode }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{{ .Title }}</title>
+  </head>
+  <body>
+    <header>
+      <h1>{{ .Title }}</h1>
+    </header>
+
+    <main>
+      <h2>Books</h2>
+      <ul>
+        {{ range .Books -}}
+        <li>
+          <a href="{{ .ID }}/index.html">
+            <em class="collection-book-title">{{ .Title }}</em>
+            by
+            <em class="collection-book-author">{{ .Author.Name }}</em>
+          </a>
+        </li>
+        {{- end }}
+      </ul>
+    </main>
+  </body>
+</html>
+`
+
 const BookDefaultTemplate = `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ .LanguageCode }}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -124,7 +156,7 @@ const BookDefaultTemplate = `
 
 const ChapterDefaultTemplate = `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ .Parent.LanguageCode }}">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

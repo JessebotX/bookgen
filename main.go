@@ -15,6 +15,8 @@ import (
 	"github.com/yuin/goldmark/parser"
 )
 
+const Version = "1.0.0"
+
 func init() {
 	if len(os.Args) < 2 {
 		log.Fatal("Missing argument.")

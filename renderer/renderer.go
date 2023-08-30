@@ -29,6 +29,25 @@ func BuildSite(collection *config.Collection) error {
 		return err
 	}
 
+	// create collection index
+	collectionTemplatePath := filepath.Join(resolvedLayoutDir, "index.html")
+	collectionTemplate := template.Must(template.New("collection").Parse(CollectionDefaultTemplate))
+	if exists(collectionTemplatePath) {
+		collectionTemplate, err = template.ParseFiles(collectionTemplatePath)
+		if err != nil {
+			return err
+		}
+	}
+	collectionIndexFile, err := os.Create(filepath.Join(resolvedOutputDir, "index.html"))
+	if err != nil {
+		return err
+	}
+
+	err = collectionTemplate.Execute(collectionIndexFile, collection)
+	if err != nil {
+		return err
+	}
+
 	// read book and chapter templates
 	bookTemplatePath := filepath.Join(resolvedLayoutDir, "book.html")
 
