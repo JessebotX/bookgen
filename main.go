@@ -4,6 +4,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -15,37 +16,50 @@ import (
 	"github.com/yuin/goldmark/parser"
 )
 
-const Version = "1.0.0"
+// Current build version
+const Version = "v1.0.0-unreleased"
 
-func init() {
+func main() {
 	if len(os.Args) < 2 {
 		log.Fatal("Missing argument.")
 	}
-}
 
-func main() {
-	converter := goldmark.New(
-		goldmark.WithExtensions(
-			extension.GFM,
-			extension.DefinitionList,
-			extension.Footnote,
-			extension.Typographer,
-			meta.Meta,
-		),
-		goldmark.WithParserOptions(
-			parser.WithAutoHeadingID(),
-			parser.WithAttribute(),
-		),
-		goldmark.WithRendererOptions(),
-	)
+	cmd := os.Args[1]
+	args := os.Args[2:]
 
-	collection, err := collection.Create(os.Args[1], converter)
-	if err != nil {
-		log.Fatal(err)
-	}
+	if cmd == "build" {
+		if len(args) <= 0 {
+			log.Fatal("Missing collection path for ", cmd)
+		}
 
-	err = renderer.BuildSite(collection)
-	if err != nil {
-		log.Fatal(err)
+		converter := goldmark.New(
+			goldmark.WithExtensions(
+				extension.GFM,
+				extension.DefinitionList,
+				extension.Footnote,
+				extension.Typographer,
+				meta.Meta,
+			),
+			goldmark.WithParserOptions(
+				parser.WithAutoHeadingID(),
+				parser.WithAttribute(),
+			),
+			goldmark.WithRendererOptions(),
+		)
+
+		collection, err := collection.Create(args[0], converter)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = renderer.BuildSite(collection)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else if cmd == "version" || cmd == "-V" {
+		fmt.Println("bookgen", Version)
+		os.Exit(0)
+	} else {
+		log.Fatal("Invalid command ", cmd)
 	}
 }

@@ -5,6 +5,7 @@ package renderer
 
 import (
 	"html/template"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -17,6 +18,7 @@ import (
 func BuildSite(collection *config.Collection) error {
 	resolvedOutputDir := filepath.Join(collection.Root, collection.OutputDir)
 	resolvedLayoutDir := filepath.Join(collection.Root, collection.LayoutDir)
+	resolvedStaticDir := filepath.Join(collection.Root, collection.StaticDir)
 
 	// clean out directories
 	err := os.RemoveAll(resolvedOutputDir)
@@ -164,6 +166,58 @@ func BuildSite(collection *config.Collection) error {
 			return err
 		}
 	}
+
+	// static contents in layouts
+	themesStaticFolder := filepath.Join(resolvedLayoutDir, "static")
+	if exists(themesStaticFolder) {
+		err = copyStaticDirToOutput(themesStaticFolder, resolvedOutputDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	// other static assets
+	if exists(resolvedStaticDir) {
+		err = copyStaticDirToOutput(resolvedStaticDir, resolvedOutputDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Copy every item in the static files directory to the output
+// directory while preserving its structure relative to the static
+// directory.
+func copyStaticDirToOutput(staticDir, outputDir string) error {
+	filepath.WalkDir(
+		staticDir,
+		func(path string, dir fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
+			base := strings.TrimPrefix(path, staticDir)
+			outputPath := filepath.Join(outputDir, base)
+
+			if dir.IsDir() {
+				err = os.MkdirAll(outputPath, 0755)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			}
+
+			err = os.Link(path, outputPath)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+	)
 
 	return nil
 }
