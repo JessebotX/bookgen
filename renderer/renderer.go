@@ -6,7 +6,6 @@ package renderer
 import (
 	"html/template"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -90,7 +89,6 @@ func BuildSite(collection *config.Collection) error {
 		// cover image
 		resolvedCoverPath := filepath.Join(bk.Root, bk.CoverPath)
 		if bk.CoverPath != "" && exists(resolvedCoverPath) {
-			log.Println("Found cover")
 			outputCoverPath := filepath.Join(bookOutputDir, bk.CoverPath)
 			err = os.Link(resolvedCoverPath, outputCoverPath)
 			if err != nil {
