@@ -10,6 +10,8 @@ package config
 import (
 	"html/template"
 	"time"
+
+	readingtime "github.com/begmaroman/reading-time"
 )
 
 type Collection struct {
@@ -71,4 +73,9 @@ type Chapter struct {
 
 func (c Chapter) SlugHTML() string {
 	return c.ID + ".html"
+}
+
+func (c Chapter) EstimatedReadingTime() *readingtime.Result {
+	estimate := readingtime.Estimate(string(c.Content))
+	return estimate
 }

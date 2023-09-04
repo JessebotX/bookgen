@@ -166,8 +166,6 @@ const ChapterDefaultTemplate = `
   <body>
     <header>
       <h1>{{ .Title }}</h1>
-      <a href="index.html"><h2>{{ .Parent.Title }}</h2></a>
-      {{ if (or (not .Published.IsZero) (not .LastModified.IsZero)) -}}
       <ul>
         {{ if not .Published.IsZero -}}
         <li>Published {{ .Published.Format "January 2 2006 3:04 PM PST" }}</li>
@@ -175,8 +173,10 @@ const ChapterDefaultTemplate = `
         {{ if not .LastModified.IsZero -}}
         <li>Last Modified {{ .LastModified.Format "January 2 2006 3:04 PM PST" }}</li>
         {{- end }}
+        <li>{{ .EstimatedReadingTime.Words }} Words</li>
+        <li>{{ .EstimatedReadingTime.Text }}</li>
       </ul>
-      {{- end }}
+      <h2><a href="index.html">{{ .Parent.Title }}</a></h2>
 
       {{ with .Description -}}
       {{ .Description }}

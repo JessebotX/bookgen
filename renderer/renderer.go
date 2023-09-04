@@ -64,7 +64,7 @@ func BuildSite(collection *config.Collection) error {
 	chapterTemplatePath := filepath.Join(resolvedLayoutDir, "chapter.html")
 	chapterTemplate := template.Must(template.New("chapter").Parse(ChapterDefaultTemplate))
 	if exists(chapterTemplatePath) {
-		bookTemplate, err = template.ParseFiles(chapterTemplatePath)
+		chapterTemplate, err = template.ParseFiles(chapterTemplatePath)
 		if err != nil {
 			return err
 		}

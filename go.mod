@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/BurntSushi/toml v1.3.2 // indirect
+	github.com/begmaroman/reading-time v0.0.0-20200518075747-77e4aae57578 // indirect
 	github.com/bmaupin/go-epub v1.1.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.3.1 // indirect
 	github.com/gofrs/uuid v3.1.0+incompatible // indirect
