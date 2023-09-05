@@ -17,7 +17,7 @@ import (
 )
 
 // Current build version
-const Version = "v1.0.0-unreleased.2"
+const Version = "v1.0.0"
 
 func main() {
 	if len(os.Args) < 2 {
