@@ -33,7 +33,7 @@ type Book struct {
 	Author           Author        `toml:"author,omitempty"`
 	Mirrors          []string      `toml:"mirrors,omitempty"`
 	ShortDescription string        `toml:"shortDescription,omitempty"`
-	Genre            string        `toml:"genre,omitempty"`
+	Genre            []string      `toml:"genre,omitempty"`
 	Status           string        `toml:"status,omitempty"`
 	CoverPath        string        `toml:"coverPath,omitempty"`
 	LanguageCode     string        `toml:"languageCode,omitempty"`
