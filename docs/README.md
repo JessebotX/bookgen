@@ -9,6 +9,14 @@ Copyright (C) 2023 Free Software Foundation, Inc.
 ## Overview
 Bookgen is a static site generator designed for authors who want to distribute their _collection_ of Markdown-based written _works_ as a standalone static website. It additionally creates RSS feeds---for readers to keep up to date with new chapters---and ebook (`.epub`) files---allowing readers to download your DRM-free written works for offline reading.
 
+## Features
+* Write in Markdown and generate a full static website ready to be deployed
+* Themes: Fully customize web page generation utilizing [Go's builtin text/html templating engine](https://pkg.go.dev/html/template)
+* Works out of the box with a default theme
+* Generates RSS feeds for each book, allowing users to keep up to date with the latest releases
+* Generates EPUB file downloads, allowing users to read all published chapters offline on any device
+* Reading time and word count estimates for each chapter
+
 ## Installation
 Bookgen is a cross-platform command-line interface application. The easiest way to install it would be to use the `go` CLI.
 
@@ -85,9 +93,100 @@ Begin by creating the following file/folder structure:
 * `src/<book identifier>.../chapters/<chapter files>.md`: Markdown files containing chapter content. Each markdown file should have a yaml metadata section at the top. See the reference for more information
 * `out/` (AUTOMATICALLY CREATED): the folder that contains a fully generated static website with RSS feeds and EPUB files included. Created after running `bookgen build <ROOT PATH>`
 
-### Concepts
+## Concepts
 Bookgen is structured in the following way:
 
 * **Chapter**: a chapter is a section in a book
+  * HTML generation controlled by `layout/chapter.html`
 * **Book**: a book is a written work containing 1 or more chapters
+  * HTML generation controlled by `layout/book.html`
 * **Index (or "collection")**: an index (or "collection") refers to the top level object that contains one or more books
+  * HTML generation controlled by `layout/index.html`
+
+## Reference
+### `bookgen.toml`
+```toml
+# Main title of the collection
+title        = "John Doe's Book Collection"
+# Base URL of this site, used primarily for RSS feed generation so it can point to the correct chapter addresses
+baseURL      = "https://johndoe.xyz/books"
+# Language of the main landing page (NOT ALWAYS the language of all books). Specify as ISO 639-1 Language code. See <https://www.w3schools.com/tags/ref_language_codes.asp> for a list of them.
+languageCode = "en"
+```
+
+### `bookgen-book.toml`
+```toml
+# Title of the book
+title            = "The Adventure's of John Doe"
+# A short one/two sentence description of what the book is about
+shortDescription = """
+Follow John Doe as he hitches a ride on a spaceship and explores the universe.
+"""
+# Genre[s] the book can be categorized into
+genre            = ["Science Fiction", "Adventure"]
+# The status of the written work, whether serialization is "On Hiatus", "Ongoing", "Completed", etc.
+status           = "Completed"
+# File name of the cover (NOTE: there shouldn't be directories in this path as the cover is in the book's root directory)
+coverPath        = "cover.png"
+# Language of the book. Specify as ISO 639-1 Language code. See <https://www.w3schools.com/tags/ref_language_codes.asp> for a list of them.
+languageCode     = "en"
+# A copyright notice
+copyright        = "Copyright John Doe"
+# Book's content license for copyright purposes
+license          = "CC0"
+# Other places where you can read this book
+mirrors          = ["https://anotherwebsite.com/johndoebook", "https://mirrorwebsite.net/johndoe/1"]
+
+[author]
+# Name of the author
+name = "John Doe"
+# About the author
+bio = """
+John Doe is a bestselling author, astrophysicist, astronaut, mathematician, computer scientist, biochemist, psychologist, engineer, clothing designer, and a entrepreneur known for his contributions in adventure sci-fi with his debut work \"The Adventure's of John Doe\".
+"""
+
+# You're able to specify as many ways to donate as you want using [[author.donate]]
+[[author.donate]]
+# Name of the site
+name = "Patreon"
+# Link to where you can donate to the author
+link = "https://patreon.com/johndoeuser11111"
+
+[[author.donate]]
+# Name of the site
+name = "Paypal"
+# Link to where you can donate to the author
+link = "https://paypal.com/johndoeuser11111"
+
+[[author.donate]] # Supports non link items such as cryptocurrency addresses
+# Name of donation method
+name = "Bitcoin"
+# Since `nonLinkItem = true`, this is no longer treated as a link
+link = "1234567890qwertyuiopasdfghjklzxcvbnm"
+# Set to true for non-link donations
+nonLinkItem = true
+```
+
+### Chapter File YAML metadata
+In each chapter markdown file, you can specify front matter in yaml format
+
+```yaml
+# the title of the chapter
+title: Chapter 1 - Where It All Began
+# a short description of the chapter
+description: "Well, this is how it all began..."
+# date and time of published, must be in this format (YYYY-mm-ddTHH:MM:SSZ)
+published: 2006-01-02T15:04:05-07:00
+# date and time file was changed (YYYY-mm-ddTHH:MM:SSZ)
+lastmod: 2023-01-01T12:00:00-07:00
+```
+
+### Go Templating Reference
+See [`config/config.go`](../config/config.go)
+
+* `Collection` struct is passed into template `index.html`
+* `Book` struct is passed into template `book.html`
+* `Chapter` struct is passed into template `chapter.html`
+
+## Examples
+See [testdata/](../testdata) for example collection projects.

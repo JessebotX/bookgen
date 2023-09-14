@@ -7,6 +7,7 @@ A powerful static site generator geared towards creatives who want to distribute
 * Works out of the box with a default theme
 * Generates RSS feeds for each book, allowing users to keep up to date with the latest releases
 * Generates EPUB file downloads, allowing users to read all published chapters offline on any device
+* Reading time and word count estimates for each chapter
 
 ## Usage
 ### Synopsis
