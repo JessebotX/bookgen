@@ -9,133 +9,82 @@ Copyright (C) 2023 Free Software Foundation, Inc.
 ## Overview
 Bookgen is a static site generator designed for authors who want to distribute their _collection_ of Markdown-based written _works_ as a standalone static website. It additionally creates RSS feeds---for readers to keep up to date with new chapters---and ebook (`.epub`) files---allowing readers to download your DRM-free written works for offline reading.
 
-Bookgen is a cross-platform command-line interface application. It has only been tested on Windows and Linux.
-
-## Bookgen Command-Line Interface Overview
-```bash
-bookgen
-```
-* Generates a full static website along with `.epub` files and RSS feeds. _User must be currently in the root folder of their bookgen project._
+## Installation
+Bookgen is a cross-platform command-line interface application. The easiest way to install it would be to use the `go` CLI.
 
 ```bash
-bookgen new <project_name>
+go install github.com/JessebotX/bookgen@latest
 ```
-* **REQUIRED FIELD**: `<project_name>`
-* Bootstrap a new bookgen project, using `<project_name>` as the name of the root directory.
+
+## Getting Started
+### Command Line Interface Overview
+```bash
+bookgen build <ROOT PATH>
+```
+Compile a project at the root directory path `<ROOT PATH>`
 
 ```bash
-bookgen help
+bookgen help|-h
 ```
+Print usage information
 
 ```bash
-bookgen -h
+bookgen version|-V
 ```
+Print the current version of `bookgen`
+
+### File Structure
+Begin by creating the following file/folder structure:
 
 ```bash
-bookgen --help
-```
-* Printing usage information
-
-```bash
-bookgen version
-```
-
-```bash
-bookgen -V
-```
-
-```bash
-bookgen --version
-```
-* Print version of application
-
-## Collection Configuration File
-A `bookgen.toml` file should be in the root of your bookgen collection. This is where you can customize internals such as the location of certain directories, as well as specifying main site index settings, such as the title of the main site, base URL, etc.
-
-**NOTE: ALL DIRECTORIES ARE RELATIVE TO THE ROOT DIRECTORY OF THE BOOKGEN COLLECTION**
-
-### Collection Configuration File Reference
-```toml
-### NOTE: commented fields are optional
-### NOTE: **ALL DIRECTORIES IN CONFIG RELATIVE TO ROOT OF COLLECTION
-
-# directory storing all books' sources
-#booksDir  = "./books"
-# directory containing layout files
-#themeDir  = "./themes"
-# where to output the generated static site
-#outputDir = "./out"
-#staticDir = "./static"
-
-[index] # main site index settings
-# the main site title
-title   = "MAIN_SITE_TITLE"
-# the base domain name url (important for RSS feeds)
-baseURL = "https://example.com"
-# language code of the main site collection index page
-languageCode = "en"
+ROOT (aka. collection, project)/
+  bookgen.toml
+  static/
+    # ...static assets here...
+  layout/
+    book.html
+    index.html
+    chapter.html
+    static/
+      style.css
+      # ...
+  src/
+    book 1 identifier/
+      bookgen-book.toml
+      cover.png
+      index.md
+      chapters/
+        chapter-1.md
+        chapter-2.md
+        # ...
+  # ...
 ```
 
-## Book Configuration File
-Each book in a collection (subdirectories of the collection's `booksDir`) should contain a `bookgen-book.toml`
+* **Root/collection/project/**: the root project directory that contains all necessary items to generate a complete static website
+* `bookgen.toml`: Main collection configuration file. See the bookgen.toml reference
+* `static/`: any assets to be included here (e.g. include a favicon). If they are a part of the layout/theme (i.e. css files), put them in `layout/static/` instead
+  * Upon building the website, all static files and folders will be placed in the root folder of the output directory, preserving its source-form file structure
+* `layout/`: the website theme that changes the way HTML is generated, utilizing Go's builtin [text/html templating engine](https://pkg.go.dev/html/template)
+* `layout/chapter.html`: HTML template controlling the generation of a chapter of a book
+* `layout/book.html`: HTML template controlling the generation of the book index page which allows users to navigate into the chapters
+* `layout/index.html`: HTML template controlling the generation of the main index/collection homepage, which displays a list of books available on the website
+* `layout/static/`: folder containing static assets such as CSS that are an essential part of the theme. Without it, the website would be incorrectly generated
+  * Upon building the website, all static files and folders will be placed in the root folder of the output directory, preserving its source-form file structure
+* `src/`: folder containing 1 or more subdirectories of books/written works
+* `src/<book identifier>.../`: folder containing the necessary items to generate a single book that is a part of the full collection. Book identifier can be any valid folder name supported by your operating system and able to be parsed as a URL. Create as many of these subdirectories as you need.
+* `src/<book identifier>.../bookgen-book.toml`: Book metadata file. See the bookgen-book.toml reference
+* `src/<book identifier>.../<cover image>`: A cover image for your book. The filetype must be supported by web browsers (e.g. webp, png, jpg, gif, etc.)
+* `src/<book identifier>.../index.md`: A markdown file that contains the full book blurb and nothing more
+* `src/<book identifier>.../chapters/`: directory containing a list of markdown files and any static assets
+  * Chapter files should not be further nested in subdirectories of `chapters/`
+  * Static assets should have unique names, even if they are in different directories
+  * Limitation: static assets must not have an `.md` file extension as it is reserved for chapter files
+* `src/<book identifier>.../chapters/<chapter files>.md`: Markdown files containing chapter content. Each markdown file should have a yaml metadata section at the top. See the reference for more information
+* `out/` (AUTOMATICALLY CREATED): the folder that contains a fully generated static website with RSS feeds and EPUB files included. Created after running `bookgen build <ROOT PATH>`
 
-### Book Configuration File Reference
-```toml
-title = "BOOK TITLE NAME"
-# One or two sentences describing what the book is about
-shortDescription = "SHORT DESCRIPTION"
-# Genre of the book
-genre = "GENRE"
-# The current status of the book, whether it has been completed, currently ongoing, on hiatus, or dropped
-status = "Ongoing|On Hiatus|Completed"
-# Path to cover image (RELATIVE TO ROOT OF BOOK DIRECTORY)
-coverPath = "./cover.png"
-# Directory containing chapters and static assets related to the book (RELATIVE TO ROOT OF BOOK DIRECTORY)
-#chaptersDir = "./chapters"
-# Book language code
-languageCode = "en"
+### Concepts
+Bookgen is structured in the following way:
 
-# author name
-author  = "AUTHOR_NAME"
-# a short "about me" of the author
-bio     = """
-ABOUT THE AUTHOR
-"""
-
-# You're able to specify as many ways to donate as you want
-
-[[author.donation]]
-#name = "DONATION_SITE_NAME (Patreon, Paypal, etc.)"
-#link = "LINK_TO_DONATION_PAGE"
-
-[[author.donation]]
-#name = "DONATION_SITE_NAME (Patreon, Paypal, etc.)"
-#link = "LINK_TO_DONATION_PAGE"
-
-# You can technically specify cryptocurrency wallet addresses instead
-[[author.donation]]
-#name = "CRYPTOCURRENY NAME (Bitcoin, Monero, etc.)"
-#link = "CRYPTOCURRENCY_WALLET_ADDRESS"
-```
-
-## Chapter Configuration Frontmatter
-### Chapter Configuration Frontmatter Reference
-```yaml
-# title of the chapter
-title:  "CHAPTER_TITLE"
-# short chapter description
-description: "DESCRIPTION HERE"
-# the published date (MUST BE IN THIS FORMAT)
-# - Format: YYYY-mm-ddTHH:MM:SS[timezone offset]
-date:    2006-01-02T15:04:05-07:00
-# last modified date (MUST BE IN THIS FORMAT)
-# - Format: YYYY-mm-ddTHH:MM:SS[timezone offset]
-lastmod: 2006-01-02T15:04:05-07:00
-```
-
-## Future
-Things that are nice to have possibly in the future.
-
-* [ ] Epub CSS styling and other features
-* [ ] Generate [Gemini capsule](https://gemini.circumlunar.space/)
-  * [ ] Generate [gempub](https://codeberg.org/oppenlab/gempub)
+* **Chapter**: a chapter is a section in a book
+* **Book**: a book is a written work containing 1 or more chapters
+* **Index (or "collection")**: an index (or "collection") refers to the top level object that contains one or more books
