@@ -37,7 +37,7 @@ Print the current version of `bookgen`
 Begin by creating the following file/folder structure:
 
 ```bash
-ROOT (aka. collection, project)/
+<ROOT> (aka. collection, project)/
   bookgen.toml
   static/
     # ...static assets here...
