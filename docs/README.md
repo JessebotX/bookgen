@@ -33,6 +33,9 @@ bookgen version|-V
 ```
 Print the current version of `bookgen`
 
+### Examples
+For further clarification, see the examples in [`testdata/`](../testdata), as well as the default templates seen in [`renderer/templates.go`](../renderer/templates.go)
+
 ### File Structure
 Begin by creating the following file/folder structure:
 
