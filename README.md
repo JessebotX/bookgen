@@ -10,15 +10,14 @@ A powerful static site generator geared towards creatives who want to distribute
 * Reading time and word count estimates for each chapter
 
 ## Usage
+See [docs/README.md](docs/README.md) for the complete documentation
+
 ### Synopsis
 ```bash
 bookgen help|-h
 bookgen version|-V
 bookgen build <PATH>
 ```
-
-### Full documentation
-* See [docs/README.md](docs/README.md)
 
 ## License
 See [LICENSE.txt](LICENSE.txt)
