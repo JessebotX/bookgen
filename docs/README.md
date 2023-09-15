@@ -117,7 +117,7 @@ languageCode = "en"
 ### `bookgen-book.toml`
 ```toml
 # Title of the book
-title            = "The Adventure's of John Doe"
+title            = "The Adventure of John Doe"
 # A short one/two sentence description of what the book is about
 shortDescription = """
 Follow John Doe as he hitches a ride on a spaceship and explores the universe.
@@ -142,7 +142,7 @@ mirrors          = ["https://anotherwebsite.com/johndoebook", "https://mirrorweb
 name = "John Doe"
 # About the author
 bio = """
-John Doe is a bestselling author, astrophysicist, astronaut, mathematician, computer scientist, biochemist, psychologist, engineer, clothing designer, and a entrepreneur known for his contributions in adventure sci-fi with his debut work \"The Adventure's of John Doe\".
+John Doe is a bestselling author, astrophysicist, astronaut, mathematician, computer scientist, biochemist, psychologist, engineer, clothing designer, and a entrepreneur known for his contributions in adventure sci-fi with his debut work \"The Adventures of John Doe\".
 """
 
 # You're able to specify as many ways to donate as you want using [[author.donate]]
