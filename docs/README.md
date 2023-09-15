@@ -176,7 +176,7 @@ title: Chapter 1 - Where It All Began
 # a short description of the chapter
 description: "Well, this is how it all began..."
 # date and time of published, must be in this format (YYYY-mm-ddTHH:MM:SSZ)
-published: 2006-01-02T15:04:05-07:00
+date: 2006-01-02T15:04:05-07:00
 # date and time file was changed (YYYY-mm-ddTHH:MM:SSZ)
 lastmod: 2023-01-01T12:00:00-07:00
 ```
