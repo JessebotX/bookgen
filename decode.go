@@ -34,7 +34,7 @@ func mapToStruct(s any, m map[string]any) error {
 			}
 
 			if _, ok := v.(map[string]any); !ok {
-				return fmt.Errorf("TODO: error msg about cannot convert v to InternalSettings")
+				return fmt.Errorf("failed to parse internal settings as a toml map")
 			}
 
 			if err := mapToStruct(&internalSettings, v.(map[string]any)); err != nil {
@@ -45,7 +45,7 @@ func mapToStruct(s any, m map[string]any) error {
 
 		if fieldType != value.Type() {
 			return fmt.Errorf(
-				"cannot set field '%v' (%v) to value '%v' (%v) because of mismatch types. Value must be of type %v.",
+				"cannot set field '%v' (%v) to value '%v' (%v) because of mismatch types. Value must be of type %v",
 				fieldName, fieldType, value, value.Type(), fieldType)
 		}
 
@@ -67,22 +67,18 @@ func DecodeCollection(data []byte) (Collection, error) {
 	// Decode TOML
 	// ---
 	if _, err := toml.Decode(string(data), &c.Params); err != nil {
-		return c, err
+		return c, fmt.Errorf("collection decode: failed to decode toml data. %v", err)
 	}
 
 	if err := mapToStruct(&c, c.Params); err != nil {
-		return c, err
+		return c, fmt.Errorf("collection decode: failed to decode toml data. %v", err)
 	}
-
-	// if _, err := toml.Decode(string(data), &c); err != nil {
-	// 	return c, err
-	// }
 
 	// ---
 	// Validate
 	// ---
-	if strings.TrimSpace(c.Title) == "" {
-		return c, fmt.Errorf("collection config: missing/empty field 'title'")
+	if err := c.ValidateFields(); err != nil {
+		return c, fmt.Errorf("collection decode: failed to validate fields. %v", err)
 	}
 
 	return c, nil

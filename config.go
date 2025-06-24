@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
+	"strings"
 	"time"
 )
 
@@ -21,7 +23,7 @@ type Collection struct {
 	LanguageCode        string
 	Books               []Book
 	FaviconImageName    string
-	ConfigFormatVersion string
+	ConfigFormatVersion int
 }
 
 // Close properly deallocates elements in the Collection object such
@@ -32,6 +34,22 @@ func (c Collection) Close() {
 	for _, b := range c.Books {
 		b.Close()
 	}
+}
+
+// ValidateFields returns nil if the collection fields are
+// well-formed, otherwise it errors. Note that it does not validate
+// the books found in Collection.Books, nor does it verify the
+// existence of any files specified in the config.
+func (c Collection) ValidateFields() error {
+	if strings.TrimSpace(c.Title) == "" {
+		return fmt.Errorf("collection: missing/empty required field 'title'")
+	}
+
+	if strings.TrimSpace(c.LanguageCode) == "" {
+		return fmt.Errorf("collection: missing/empty required field 'languageCode'")
+	}
+
+	return nil
 }
 
 // Book represents an ordered list of chapters.
