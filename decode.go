@@ -34,7 +34,7 @@ func mapToStruct(s any, m map[string]any) error {
 			}
 
 			if _, ok := v.(map[string]any); !ok {
-				return fmt.Errorf("failed to parse internal settings as a toml map")
+				return fmt.Errorf("internal settings must be defined as a toml map")
 			}
 
 			if err := mapToStruct(&internalSettings, v.(map[string]any)); err != nil {
@@ -67,18 +67,18 @@ func DecodeCollection(data []byte) (Collection, error) {
 	// Decode TOML
 	// ---
 	if _, err := toml.Decode(string(data), &c.Params); err != nil {
-		return c, fmt.Errorf("collection decode: failed to decode toml data. %v", err)
+		return c, fmt.Errorf("decode: failed to decode toml data. %v", err)
 	}
 
 	if err := mapToStruct(&c, c.Params); err != nil {
-		return c, fmt.Errorf("collection decode: failed to decode toml data. %v", err)
+		return c, fmt.Errorf("decode: failed to decode toml data. %v", err)
 	}
 
 	// ---
 	// Validate
 	// ---
 	if err := c.ValidateFields(); err != nil {
-		return c, fmt.Errorf("collection decode: failed to validate fields. %v", err)
+		return c, fmt.Errorf("decode: failed to validate fields. %v", err)
 	}
 
 	return c, nil

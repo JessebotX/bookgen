@@ -66,9 +66,11 @@ func main() {
 	// ---
 
 	tomlBody := `
-title = "hh"
+title = ""
+languageCode = "en-US"
 
 [internal]
+hello = ""
 `
 
 	collection, err := DecodeCollection([]byte(tomlBody))
@@ -80,6 +82,10 @@ title = "hh"
 }
 
 func errorExit(code int, format string, a ...any) {
-	fmt.Fprintf(os.Stderr, "bookgen error: "+format+"\n", a...)
+	fmt.Fprintf(os.Stderr, terminalPrintBold("bookgen error: ")+format+"\n", a...)
 	os.Exit(code)
+}
+
+func terminalPrintBold(s string) string {
+	return "\033[1m" + s + "\033[0m"
 }
