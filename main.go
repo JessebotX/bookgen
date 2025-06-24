@@ -66,11 +66,9 @@ func main() {
 	// ---
 
 	tomlBody := `
-tiTle = "Hello world"
-title = 1
+title = "hh"
 
-[hello]
-exTra = "Hi"
+[internal]
 `
 
 	collection, err := DecodeCollection([]byte(tomlBody))

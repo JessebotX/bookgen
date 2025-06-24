@@ -28,8 +28,25 @@ func mapToStruct(s any, m map[string]any) error {
 
 		fieldType := reflectFieldValue.Type()
 		value := reflect.ValueOf(v)
+		if fieldType == reflect.TypeOf(InternalSettings{}) {
+			internalSettings := InternalSettings{
+				GenerateEPUB: true,
+			}
+
+			if _, ok := v.(map[string]any); !ok {
+				return fmt.Errorf("TODO: error msg about cannot convert v to InternalSettings")
+			}
+
+			if err := mapToStruct(&internalSettings, v.(map[string]any)); err != nil {
+				return err
+			}
+			value = reflect.ValueOf(internalSettings)
+		}
+
 		if fieldType != value.Type() {
-			return fmt.Errorf("cannot set field '%v' (%v) to value '%v' (%v) because of mismatch types.\nValue must be of type %v.", fieldName, fieldType, value, value.Type(), fieldType)
+			return fmt.Errorf(
+				"cannot set field '%v' (%v) to value '%v' (%v) because of mismatch types. Value must be of type %v.",
+				fieldName, fieldType, value, value.Type(), fieldType)
 		}
 
 		reflectFieldValue.Set(value)
@@ -39,16 +56,35 @@ func mapToStruct(s any, m map[string]any) error {
 
 // Decode data and files into a collection of books
 func DecodeCollection (data []byte) (Collection, error) {
-	var collection Collection
-
-	if _, err := toml.Decode(string(data), &collection.Params); err != nil {
-		return collection, err
+	c := Collection{
+		Internal: InternalSettings{
+			GenerateEPUB: true,
+		},
+		LanguageCode: "en",
 	}
 
-	if err := mapToStruct(&collection, collection.Params); err != nil {
-		return collection, err
+	// ---
+	// Decode TOML
+	// ---
+	if _, err := toml.Decode(string(data), &c.Params); err != nil {
+		return c, err
 	}
 
-	return collection, nil
+	if err := mapToStruct(&c, c.Params); err != nil {
+		return c, err
+	}
+
+	// if _, err := toml.Decode(string(data), &c); err != nil {
+	// 	return c, err
+	// }
+
+	// ---
+	// Set/check defaults
+	// ---
+	if strings.TrimSpace(c.Title) == "" {
+		return c, fmt.Errorf("collection config: missing/empty field 'title'")
+	}
+
+	return c, nil
 }
 
