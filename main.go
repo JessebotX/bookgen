@@ -62,10 +62,23 @@ func main() {
 	}
 
 	// ---
-	// TODO: Parse collection
+	// Parse collection
 	// ---
 
-	fmt.Println("Hello, world!")
+	tomlBody := `
+tiTle = "Hello world"
+title = 1
+
+[hello]
+exTra = "Hi"
+`
+
+	collection, err := DecodeCollection([]byte(tomlBody))
+	if err != nil {
+		errorExit(1, err.Error())
+	}
+
+	fmt.Printf("%#v\n", collection)
 }
 
 func errorExit(code int, format string, a ...any) {
