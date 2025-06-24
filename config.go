@@ -13,14 +13,15 @@ type InternalSettings struct {
 
 // Collection represents a list/index of one or more books.
 type Collection struct {
-	Params           map[string]any
-	Internal         InternalSettings
-	Title            string
-	Description      string
-	BaseURL          string
-	LanguageCode     string
-	Books            []Book
-	FaviconImageName string
+	Params              map[string]any
+	Internal            InternalSettings
+	Title               string
+	Description         string
+	BaseURL             string
+	LanguageCode        string
+	Books               []Book
+	FaviconImageName    string
+	ConfigFormatVersion string
 }
 
 // Close properly deallocates elements in the Collection object such
@@ -123,4 +124,3 @@ type SocialLink struct {
 	Address     string
 	IsHyperlink bool
 }
-
