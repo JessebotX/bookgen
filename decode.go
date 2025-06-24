@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -55,7 +57,7 @@ func mapToStruct(s any, m map[string]any) error {
 }
 
 // Decode data and files into a collection of books
-func DecodeCollection(data []byte) (Collection, error) {
+func DecodeCollection(data []byte, workingDir string) (Collection, error) {
 	c := Collection{
 		Internal: Internal{
 			GenerateEPUB: true,
@@ -67,19 +69,73 @@ func DecodeCollection(data []byte) (Collection, error) {
 	// Decode TOML
 	// ---
 	if _, err := toml.Decode(string(data), &c.Params); err != nil {
-		return c, fmt.Errorf("decode: failed to decode toml data. %v", err)
+		return c, fmt.Errorf("failed to decode collection toml data. %v", err)
 	}
 
 	if err := mapToStruct(&c, c.Params); err != nil {
-		return c, fmt.Errorf("decode: failed to decode toml data. %v", err)
+		return c, fmt.Errorf("failed to decode collection toml data. %v", err)
 	}
 
 	// ---
 	// Validate
 	// ---
 	if err := c.ValidateFields(); err != nil {
-		return c, fmt.Errorf("decode: failed to validate fields. %v", err)
+		return c, fmt.Errorf("failed to validate collection fields. %v", err)
+	}
+
+	// ---
+	// Decode books
+	// ---
+	c.Books = make([]Book, 0)
+	booksDir := filepath.Join(workingDir, "books")
+	items, err := os.ReadDir(booksDir)
+	if err != nil && os.IsNotExist(err) {
+		return c, nil
+	}
+
+	if err != nil {
+		return c, fmt.Errorf("failed to read books directory %v. %v", booksDir, err)
+	}
+
+	for _, item := range items {
+		if !item.IsDir() {
+			continue
+		}
+
+		bookWorkingDir := filepath.Join(booksDir, item.Name())
+		tomlBody, err := os.ReadFile(filepath.Join(bookWorkingDir, "mkbk-book.toml"))
+		if err != nil {
+			return c, err
+		}
+
+		book, err := DecodeBook(tomlBody, bookWorkingDir, &c)
+		if err != nil {
+			return c, err
+		}
+
+		c.Books = append(c.Books, book)
 	}
 
 	return c, nil
+}
+
+func DecodeBook(data []byte, workingDir string, parent *Collection) (Book, error) {
+	b := Book{
+		Parent: parent,
+	}
+
+	if parent != nil {
+		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB
+		b.LanguageCode = parent.LanguageCode
+	}
+
+	if _, err := toml.Decode(string(data), &b.Params); err != nil {
+		return b, fmt.Errorf("failed to decode book toml data @ %v. %v", workingDir, err)
+	}
+
+	if err := mapToStruct(&b, b.Params); err != nil {
+		return b, fmt.Errorf("failed to decode book toml data @ %v. %v", workingDir, err)
+	}
+
+	return b, nil
 }

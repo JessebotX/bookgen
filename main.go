@@ -81,15 +81,12 @@ func main() {
 	// Parse collection
 	// ---
 
-	tomlBody := `
-title = ""
-languageCode = "en-US"
+	tomlBody, err := os.ReadFile(filepath.Join(workingDirFlag, "bookgen.toml"))
+	if err != nil {
+		errorExit(1, err.Error())
+	}
 
-[internal]
-hello = ""
-`
-
-	collection, err := DecodeCollection([]byte(tomlBody))
+	collection, err := DecodeCollection([]byte(tomlBody), workingDirFlag)
 	if err != nil {
 		errorExit(1, err.Error())
 	}
