@@ -6,13 +6,15 @@ import (
 	"path/filepath"
 )
 
+var EnablePlainOutput = false
+
 func main() {
 	// ---
 	// Read CLI arguments
 	// ---
 	// Home-made cli argument parsing
 	var workingDirFlag, outputDirFlag string
-	setWorkingDirFlag, setOutputDirFlag := false, false
+	setWorkingDirFlag, setOutputDirFlag, setPlainFlag := false, false, false
 
 	// cli arguments are optional
 	if len(os.Args) >= 2 {
@@ -21,6 +23,20 @@ func main() {
 
 			if arg == "--" {
 				break
+			} else if arg == "--plain" {
+				if (i + 1) < len(os.Args) {
+					val := os.Args[i+1]
+					if val == "none" {
+						EnablePlainOutput = false
+						setPlainFlag = true
+						i++
+					}
+				}
+
+				if !setPlainFlag {
+					EnablePlainOutput = true
+				}
+				setPlainFlag = true
 			} else if arg == "-i" || arg == "--input-directory" {
 				// Flag requires arg
 				if (i + 1) >= len(os.Args) {
@@ -87,5 +103,9 @@ func errorExit(code int, format string, a ...any) {
 }
 
 func terminalPrintBold(s string) string {
+	if EnablePlainOutput {
+		return s
+	}
+
 	return "\033[1m" + s + "\033[0m"
 }
