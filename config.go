@@ -7,16 +7,16 @@ import (
 	"time"
 )
 
-// InternalSettings represents the app's settings that may be useful
+// Internal represents the app's settings that may be useful
 // for themes to know about.
-type InternalSettings struct {
+type Internal struct {
 	GenerateEPUB bool
 }
 
 // Collection represents a list/index of one or more books.
 type Collection struct {
 	Params              map[string]any
-	Internal            InternalSettings
+	Internal            Internal
 	Title               string
 	Description         string
 	BaseURL             string
@@ -56,7 +56,7 @@ func (c Collection) ValidateFields() error {
 type Book struct {
 	Params           map[string]any
 	Parent           *Collection
-	Internal         InternalSettings
+	Internal         Internal
 	UniqueID         string
 	Title            string
 	Subtitle         string

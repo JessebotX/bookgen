@@ -28,8 +28,8 @@ func mapToStruct(s any, m map[string]any) error {
 
 		fieldType := reflectFieldValue.Type()
 		value := reflect.ValueOf(v)
-		if fieldType == reflect.TypeOf(InternalSettings{}) {
-			internalSettings := InternalSettings{
+		if fieldType == reflect.TypeOf(Internal{}) {
+			internalSettings := Internal{
 				GenerateEPUB: true,
 			}
 
@@ -57,7 +57,7 @@ func mapToStruct(s any, m map[string]any) error {
 // Decode data and files into a collection of books
 func DecodeCollection(data []byte) (Collection, error) {
 	c := Collection{
-		Internal: InternalSettings{
+		Internal: Internal{
 			GenerateEPUB: true,
 		},
 		LanguageCode: "en",
