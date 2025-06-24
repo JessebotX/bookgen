@@ -21,7 +21,7 @@ func main() {
 
 			if arg == "--" {
 				break
-			} else if arg == "-i" || arg == "--input-dir" || arg == "--input-directory" {
+			} else if arg == "-i" || arg == "--input-directory" {
 				// Flag requires arg
 				if (i + 1) >= len(os.Args) {
 					errorExit(1, "missing value for flag '%s", arg)
@@ -30,7 +30,7 @@ func main() {
 				workingDirFlag = os.Args[i+1]
 				setWorkingDirFlag = true
 				i++ // next arg is not a flag
-			} else if arg == "-o" || arg == "--output-dir" || arg == "--output-directory" {
+			} else if arg == "-o" || arg == "--output-directory" {
 				// Flag requires arg
 				if (i + 1) >= len(os.Args) {
 					errorExit(1, "missing value for flag '%s'", arg)
@@ -40,7 +40,7 @@ func main() {
 				setOutputDirFlag = true
 				i++ // next arg is not a flag
 			} else {
-				errorExit(1, "unknown argument '%s'", arg)
+				errorExit(1, "unknown flag '%s'", arg)
 			}
 		}
 	}
