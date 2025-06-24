@@ -103,7 +103,7 @@ func DecodeCollection(data []byte, workingDir string) (Collection, error) {
 		}
 
 		bookWorkingDir := filepath.Join(booksDir, item.Name())
-		tomlBody, err := os.ReadFile(filepath.Join(bookWorkingDir, "mkbk-book.toml"))
+		tomlBody, err := os.ReadFile(filepath.Join(bookWorkingDir, "bookgen-book.toml"))
 		if err != nil {
 			return c, err
 		}
