@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
-	"fmt"
 
 	"github.com/BurntSushi/toml"
 )
@@ -13,7 +13,7 @@ import (
 func mapToStruct(s any, m map[string]any) error {
 	for fieldName, v := range m {
 		reflectField := reflect.ValueOf(s).Elem()
-		reflectFieldValue := reflectField.FieldByNameFunc(func (n string) bool {
+		reflectFieldValue := reflectField.FieldByNameFunc(func(n string) bool {
 			return strings.EqualFold(n, fieldName)
 		})
 
@@ -55,7 +55,7 @@ func mapToStruct(s any, m map[string]any) error {
 }
 
 // Decode data and files into a collection of books
-func DecodeCollection (data []byte) (Collection, error) {
+func DecodeCollection(data []byte) (Collection, error) {
 	c := Collection{
 		Internal: InternalSettings{
 			GenerateEPUB: true,
@@ -79,7 +79,7 @@ func DecodeCollection (data []byte) (Collection, error) {
 	// }
 
 	// ---
-	// Set/check defaults
+	// Validate
 	// ---
 	if strings.TrimSpace(c.Title) == "" {
 		return c, fmt.Errorf("collection config: missing/empty field 'title'")
@@ -87,4 +87,3 @@ func DecodeCollection (data []byte) (Collection, error) {
 
 	return c, nil
 }
-
