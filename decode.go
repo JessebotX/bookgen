@@ -56,7 +56,8 @@ func mapToStruct(s any, m map[string]any) error {
 	return nil
 }
 
-// Decode a structured directory into a Collection.
+// Decode a structured directory with a bookgen configuration file
+// into a Collection.
 func DecodeCollection(workingDir string) (Collection, error) {
 	// ---
 	// Read file
@@ -124,7 +125,8 @@ func DecodeCollection(workingDir string) (Collection, error) {
 	return c, nil
 }
 
-// Decode a structured directory into a Book.
+// Decode a structured directory with a bookgen-book configuration
+// file into a Book.
 func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	// ---
 	// Read file
