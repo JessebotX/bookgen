@@ -240,5 +240,13 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	}
 	b.Content.HTML = contentHTML
 
+	// ---
+	// TODO: Check existence of files like cover image
+	// ---
+
+	// ---
+	// TODO: Read chapters
+	// ---
+
 	return b, nil
 }
