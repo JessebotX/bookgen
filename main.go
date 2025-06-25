@@ -47,7 +47,7 @@ func main() {
 			} else if arg == "-i" || arg == "--input-directory" {
 				// Flag requires arg
 				if (i + 1) >= len(os.Args) {
-					errorExit(1, "missing value for flag '%v. See '%v --help' for more info.", arg, ProgramName)
+					errorExit(1, "missing value for flag `%v`. See `%v` --help` for more info.", arg, ProgramName)
 				}
 
 				workingDirFlag = os.Args[i+1]
@@ -56,14 +56,14 @@ func main() {
 			} else if arg == "-o" || arg == "--output-directory" {
 				// Flag requires arg
 				if (i + 1) >= len(os.Args) {
-					errorExit(1, "missing value for flag '%v'. See '%v --help' for more info.", arg, ProgramName)
+					errorExit(1, "missing value for flag `%v`. See `%v --help` for more info.", arg, ProgramName)
 				}
 
 				outputDirFlag = os.Args[i+1]
 				setOutputDirFlag = true
 				i++ // next arg is not a flag
 			} else {
-				errorExit(1, "unknown flag '%v'.", arg)
+				errorExit(1, "unknown flag `%v`. See `%v --help` for more info.", arg, ProgramName)
 			}
 		}
 	}
@@ -81,7 +81,7 @@ func main() {
 
 	// output dir cannot be == working dir
 	if filepath.Clean(outputDirFlag) == filepath.Clean(workingDirFlag) {
-		errorExit(1, "output directory cannot be equal to the working/input directory ('%s' and '%s' reference the same path).", workingDirFlag, outputDirFlag)
+		errorExit(1, "output directory cannot be equal to the working/input directory (`%s` and `%s` reference the same path).", workingDirFlag, outputDirFlag)
 	}
 
 	// ---

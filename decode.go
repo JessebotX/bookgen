@@ -25,7 +25,7 @@ func mapToStruct(s any, m map[string]any) error {
 		}
 
 		if !reflectFieldValue.CanSet() {
-			return fmt.Errorf("value of field '%s' cannot be changed.", fieldName)
+			return fmt.Errorf("value of field `%s` cannot be changed.", fieldName)
 		}
 
 		fieldType := reflectFieldValue.Type()
@@ -47,7 +47,7 @@ func mapToStruct(s any, m map[string]any) error {
 
 		if fieldType != fieldValue.Type() {
 			return fmt.Errorf(
-				"mismatch types: value '%v' (%v) must have the same type as field '%v' (%v).",
+				"mismatch types: value `%v` (%v) must have the same type as field `%v` (%v).",
 				fieldValue, fieldValue.Type(), fieldName, fieldType)
 		}
 
@@ -65,7 +65,7 @@ func DecodeCollection(workingDir string) (Collection, error) {
 	pathTOML := filepath.Join(workingDir, "bookgen.toml")
 	dataTOML, err := os.ReadFile(pathTOML)
 	if err != nil {
-		return Collection{}, fmt.Errorf("collection: failed to read file '%v'. %w", pathTOML, err)
+		return Collection{}, fmt.Errorf("collection: failed to read file `%v`. %w", pathTOML, err)
 	}
 
 	// ---
@@ -79,11 +79,11 @@ func DecodeCollection(workingDir string) (Collection, error) {
 	}
 
 	if _, err := toml.Decode(string(dataTOML), &c.Params); err != nil {
-		return c, fmt.Errorf("collection: failed to decode TOML in '%v'. %w", pathTOML, err)
+		return c, fmt.Errorf("collection: failed to decode TOML in `%v`. %w", pathTOML, err)
 	}
 
 	if err := mapToStruct(&c, c.Params); err != nil {
-		return c, fmt.Errorf("collection: failed to decode TOML in '%v'. %w", pathTOML, err)
+		return c, fmt.Errorf("collection: failed to decode TOML in `%v`. %w", pathTOML, err)
 	}
 
 	// ---
@@ -134,7 +134,7 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	pathTOML := filepath.Join(workingDir, "bookgen-book.toml")
 	dataTOML, err := os.ReadFile(pathTOML)
 	if err != nil {
-		return Book{}, fmt.Errorf("book: failed to read file '%v'. %w", err)
+		return Book{}, fmt.Errorf("book: failed to read file `%v`. %w", err)
 	}
 
 	// ---
@@ -151,18 +151,18 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	}
 
 	if _, err := toml.Decode(string(dataTOML), &b.Params); err != nil {
-		return b, fmt.Errorf("book '%v': failed to decode TOML in '%v'. %w", b.PageName, pathTOML, err)
+		return b, fmt.Errorf("book `%v`: failed to decode TOML in `%v`. %w", b.PageName, pathTOML, err)
 	}
 
 	if err := mapToStruct(&b, b.Params); err != nil {
-		return b, fmt.Errorf("book '%v': failed to decode TOML in '%v'. %w", b.PageName, pathTOML, err)
+		return b, fmt.Errorf("book `%v`: failed to decode TOML in `%v`. %w", b.PageName, pathTOML, err)
 	}
 
 	// ---
 	// Check requirements
 	// ---
 	if err := b.CheckRequirementsForParsing(workingDir); err != nil {
-		return b, fmt.Errorf("book '%v': failed to meet requirements. %w", b.PageName, err)
+		return b, fmt.Errorf("book `%v`: failed to meet requirements. %w", b.PageName, err)
 	}
 
 	return b, nil

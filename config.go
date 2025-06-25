@@ -78,7 +78,7 @@ func (c Collection) Close() {
 // that the Collection has been initialized with correct defaults.
 func (c Collection) CheckRequirementsForParsing() error {
 	if strings.TrimSpace(c.Title) == "" {
-		return fmt.Errorf("missing/empty required field 'title'")
+		return fmt.Errorf("missing/empty required field `title`")
 	}
 
 	return nil
@@ -123,16 +123,16 @@ type Book struct {
 func (b Book) CheckRequirementsForParsing(workingDir string) error {
 	// check if user accidentally set PageName
 	if b.PageName != filepath.Base(workingDir) {
-		return fmt.Errorf("field 'pageName' must equal to the base name of the working directory")
+		return fmt.Errorf("field `PageName` must equal to the base name of the working directory.")
 	}
 
 	if strings.TrimSpace(b.Title) == "" {
-		return fmt.Errorf("missing/empty required field 'title'")
+		return fmt.Errorf("missing/empty required field `title`.")
 	}
 
 	if strings.TrimSpace(b.Status) != "" {
 		if !slices.Contains(BookStatusValidValues, strings.ToLower(b.Status)) {
-			return fmt.Errorf("invalid value for field 'status'. Must be one of the following options (case-insensitive): %v", strings.Join(BookStatusValidValues[:], " | "))
+			return fmt.Errorf("invalid value for field `status`. Must be one of the following options (case-insensitive): %v.", strings.Join(BookStatusValidValues[:], " | "))
 		}
 	}
 
