@@ -219,13 +219,13 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	rawMarkdownPath := filepath.Join(workingDir, "index.md")
 	rawMarkdown, err := os.ReadFile(rawMarkdownPath)
 	if err != nil && os.IsExist(err) {
-		return b, fmt.Errorf("book `%v`: failed to read book content file at `%v`, %w", rawMarkdownPath, err)
+		return b, fmt.Errorf("book `%v`: failed to read book content file at `%v`, %w", b.PageName, rawMarkdownPath, err)
 	}
 	b.Content.Raw = string(rawMarkdown)
 
 	contentHTML, _, err := convertMarkdownToHTML(rawMarkdown, false)
 	if err != nil {
-		return b, fmt.Errorf("book `%v`: failed to convert markdown to HTML. %w", err)
+		return b, fmt.Errorf("book `%v`: failed to convert markdown to HTML. %w", b.PageName, err)
 	}
 	b.Content.HTML = contentHTML
 
@@ -234,8 +234,57 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	// ---
 
 	// ---
-	// TODO: Read chapters
+	// WIP: Read chapters
 	// ---
+	chaptersDir := filepath.Join(workingDir, "chapters")
+	items, err := os.ReadDir(chaptersDir)
+	if err != nil {
+		if os.IsExist(err) {
+			return b, fmt.Errorf("book `%v`: failed to read chapters directory at `%v`. %w", b.PageName, chaptersDir, err)
+		}
+	}
+
+	b.Chapters = make([]Chapter, 0)
+	for _, item := range items {
+		if item.IsDir() || !strings.HasSuffix(item.Name(), ".md") {
+			continue
+		}
+
+		chapterSourcePath := filepath.Join(chaptersDir, item.Name())
+		c, err := DecodeChapter(chapterSourcePath, &b)
+		if err != nil {
+			return b, fmt.Errorf("book %v: %w", b.PageName, err)
+		}
+
+		b.Chapters = append(b.Chapters, c)
+	}
+
+	// TODO: sort chapters and fill Next and Previous pointers
 
 	return b, nil
+}
+
+func DecodeChapter(path string, parent *Book) (Chapter, error) {
+	rawMarkdown, err := os.ReadFile(path)
+	chapterSlug := strings.TrimSuffix(filepath.Base(path), ".md")
+	if err != nil {
+		return Chapter{}, fmt.Errorf("chapter `%v`: failed to read file at `%v`. %w", chapterSlug, path, err)
+	}
+
+	var c Chapter
+	c.InitializeDefaults(path, parent)
+
+	c.Content.Raw = string(rawMarkdown)
+	contentHTML, metadata, err := convertMarkdownToHTML(rawMarkdown, false)
+	if err != nil {
+		return c, fmt.Errorf("chapter `%v`: failed to convert markdown to HTML. %w", chapterSlug, err)
+	}
+	c.Content.HTML = contentHTML
+
+	c.Params = metadata
+	if err := mapToStruct(&c, c.Params); err != nil {
+		return c, fmt.Errorf("chapter `%v`: failed to decode metadata in chapter. %w", chapterSlug, err)
+	}
+
+	return c, nil
 }

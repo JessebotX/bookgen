@@ -128,13 +128,15 @@ func (b *Book) InitializeDefaults(workingDir string, parent *Collection) {
 	b.Parent = parent
 	b.IsStub = false
 	b.Status = "completed"
+	b.Internal.GenerateEPUB = true
+	b.LanguageCode = "en"
 
 	if parent != nil {
 		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB
-		b.LanguageCode = parent.LanguageCode
-	} else {
-		b.Internal.GenerateEPUB = true
-		b.LanguageCode = "en"
+
+		if strings.TrimSpace(parent.LanguageCode) != "" {
+			b.LanguageCode = parent.LanguageCode
+		}
 	}
 }
 
@@ -193,6 +195,23 @@ type Chapter struct {
 	DatePublished    time.Time
 	DateLastModified time.Time
 	Content          Content
+}
+
+func (c *Chapter) InitializeDefaults(workingDir string, parent *Book) {
+	c.Parent = parent
+	c.PageName = filepath.Base(workingDir)
+	c.Order = 1
+	c.LanguageCode = "en"
+
+	if parent != nil {
+		if strings.TrimSpace(parent.LanguageCode) != "" {
+			c.LanguageCode = parent.LanguageCode
+		}
+
+		if strings.TrimSpace(parent.Copyright) != "" {
+			c.Copyright = parent.Copyright
+		}
+	}
 }
 
 // Close properly deallocates any elements in the Chapter object such
