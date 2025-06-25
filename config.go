@@ -3,8 +3,14 @@ package main
 import (
 	"fmt"
 	"html/template"
+	"path/filepath"
+	"slices"
 	"strings"
 	"time"
+)
+
+var (
+	StatusValidValues = []string{"completed", "hiatus", "ongoing"}
 )
 
 // Internal represents the app's settings that may be useful
@@ -57,7 +63,7 @@ type Book struct {
 	Params           map[string]any
 	Parent           *Collection
 	Internal         Internal
-	UniqueID         string
+	PageName         string
 	Title            string
 	Subtitle         string
 	TitleSort        string
@@ -75,7 +81,30 @@ type Book struct {
 	DatePublished    time.Time
 	DateLastModified time.Time
 	Content          Content
+	IsStub           bool
 	Chapters         []Chapter
+}
+
+// ValidateFields returns nil if the book fields are well-formed,
+// otherwise it errors. Note that it does not validate the chapters
+// found in Book.Chapters, nor does it verify the existence of any
+// files specified in the config.
+func (b Book) ValidateFields(workingDir string) error {
+	if b.PageName != filepath.Base(workingDir) {
+		return fmt.Errorf("book: cannot set field 'pageName' to anything other than the base name of the working directory")
+	}
+
+	if strings.TrimSpace(b.Title) == "" {
+		return fmt.Errorf("book: missing/empty required field 'title'")
+	}
+
+	if strings.TrimSpace(b.Status) != "" {
+		if !slices.Contains(StatusValidValues, strings.ToLower(b.Status)) {
+			return fmt.Errorf("book: invalid value for 'status' field. Must be one of the following: %v", StatusValidValues)
+		}
+	}
+
+	return nil
 }
 
 // Close properly deallocates elements in the Book object such as
@@ -95,7 +124,7 @@ type Chapter struct {
 	Parent           *Book
 	Previous         *Chapter
 	Next             *Chapter
-	UniqueID         string
+	PageName         string
 	Title            string
 	Subtitle         string
 	Description      string

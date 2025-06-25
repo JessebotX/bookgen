@@ -69,18 +69,18 @@ func DecodeCollection(data []byte, workingDir string) (Collection, error) {
 	// Decode TOML
 	// ---
 	if _, err := toml.Decode(string(data), &c.Params); err != nil {
-		return c, fmt.Errorf("failed to decode collection toml data. %v", err)
+		return c, fmt.Errorf("failed to decode collection toml data. %w", err)
 	}
 
 	if err := mapToStruct(&c, c.Params); err != nil {
-		return c, fmt.Errorf("failed to decode collection toml data. %v", err)
+		return c, fmt.Errorf("failed to decode collection toml data. %w", err)
 	}
 
 	// ---
 	// Validate
 	// ---
 	if err := c.ValidateFields(); err != nil {
-		return c, fmt.Errorf("failed to validate collection fields. %v", err)
+		return c, fmt.Errorf("failed to validate collection fields. %w", err)
 	}
 
 	// ---
@@ -94,7 +94,7 @@ func DecodeCollection(data []byte, workingDir string) (Collection, error) {
 	}
 
 	if err != nil {
-		return c, fmt.Errorf("failed to read books directory %v. %v", booksDir, err)
+		return c, fmt.Errorf("failed to read books directory %v. %w", booksDir, err)
 	}
 
 	for _, item := range items {
@@ -121,7 +121,8 @@ func DecodeCollection(data []byte, workingDir string) (Collection, error) {
 
 func DecodeBook(data []byte, workingDir string, parent *Collection) (Book, error) {
 	b := Book{
-		Parent: parent,
+		Parent:   parent,
+		PageName: filepath.Base(workingDir),
 	}
 
 	if parent != nil {
@@ -129,12 +130,23 @@ func DecodeBook(data []byte, workingDir string, parent *Collection) (Book, error
 		b.LanguageCode = parent.LanguageCode
 	}
 
+	// ---
+	// Decode toml
+	// ---
+
 	if _, err := toml.Decode(string(data), &b.Params); err != nil {
-		return b, fmt.Errorf("failed to decode book toml data @ %v. %v", workingDir, err)
+		return b, fmt.Errorf("failed to decode book toml data @ %v. %w", workingDir, err)
 	}
 
 	if err := mapToStruct(&b, b.Params); err != nil {
-		return b, fmt.Errorf("failed to decode book toml data @ %v. %v", workingDir, err)
+		return b, fmt.Errorf("failed to decode book toml data @ %v. %w", workingDir, err)
+	}
+
+	// ---
+	// Check validity
+	// ---
+	if err := b.ValidateFields(workingDir); err != nil {
+		return b, fmt.Errorf("failed to validate book fields for %v. %w", workingDir, err)
 	}
 
 	return b, nil
