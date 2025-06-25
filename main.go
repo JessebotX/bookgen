@@ -90,7 +90,7 @@ func main() {
 
 	collection, err := DecodeCollection(workingDirFlag)
 	if err != nil {
-		errorExit(1, "%w", err)
+		errorExit(1, err.Error())
 	}
 
 	fmt.Printf("%#v\n", collection)

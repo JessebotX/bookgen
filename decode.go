@@ -130,12 +130,8 @@ func DecodeCollection(workingDir string) (Collection, error) {
 	// ---
 	// Decode TOML
 	// ---
-	c := Collection{
-		Internal: Internal{
-			GenerateEPUB: true,
-		},
-		LanguageCode: "en",
-	}
+	var c Collection
+	c.InitializeDefaults()
 
 	if _, err := toml.Decode(string(dataTOML), &c.Params); err != nil {
 		return c, fmt.Errorf("collection: failed to decode TOML in `%v`. %w", pathTOML, err)
@@ -199,15 +195,8 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	// ---
 	// Decode toml
 	// ---
-	b := Book{
-		Parent:   parent,
-		PageName: filepath.Base(workingDir),
-	}
-
-	if parent != nil {
-		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB
-		b.LanguageCode = parent.LanguageCode
-	}
+	var b Book
+	b.InitializeDefaults(workingDir, parent)
 
 	if _, err := toml.Decode(string(dataTOML), &b.Params); err != nil {
 		return b, fmt.Errorf("book `%v`: failed to decode TOML in `%v`. %w", b.PageName, pathTOML, err)

@@ -62,9 +62,17 @@ type Collection struct {
 	ConfigFormatVersion int
 }
 
+func (c *Collection) InitializeDefaults() {
+	c.Title = "My Writing"
+	c.Description = "Collection of my written works."
+	c.ConfigFormatVersion = 0
+	c.LanguageCode = "en"
+	c.Internal.GenerateEPUB = true
+}
+
 // Close properly deallocates elements in the Collection object such
 // as maps, and calls Book.Close for each Book in Collection.Books.
-func (c Collection) Close() {
+func (c *Collection) Close() {
 	clear(c.Params)
 
 	for _, b := range c.Books {
@@ -77,7 +85,7 @@ func (c Collection) Close() {
 // does not check for things such as the existence of file
 // contents/paths that the user may have specified, and it assumes
 // that the Collection has been initialized with correct defaults.
-func (c Collection) CheckRequirementsForParsing() error {
+func (c *Collection) CheckRequirementsForParsing() error {
 	if strings.TrimSpace(c.Title) == "" {
 		return fmt.Errorf("missing/empty required field `title`")
 	}
@@ -115,13 +123,28 @@ type Book struct {
 	Chapters         []Chapter
 }
 
+func (b *Book) InitializeDefaults(workingDir string, parent *Collection) {
+	b.PageName = filepath.Base(workingDir)
+	b.Parent = parent
+	b.IsStub = false
+	b.Status = "completed"
+
+	if parent != nil {
+		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB
+		b.LanguageCode = parent.LanguageCode
+	} else {
+		b.Internal.GenerateEPUB = true
+		b.LanguageCode = "en"
+	}
+}
+
 // CheckRequirementsForParsing checks if required fields have valid
 // values for future parsing (e.g. Book.Title is not empty). It does
 // not check for things such as the existence of file contents/paths
 // that the user may have specified, and it assumes that the Book has
 // been initialized with correct defaults (i.e. assuming Book.PageName is
 // unique in a Collection).
-func (b Book) CheckRequirementsForParsing(workingDir string) error {
+func (b *Book) CheckRequirementsForParsing(workingDir string) error {
 	// check if user accidentally set PageName
 	if b.PageName != filepath.Base(workingDir) {
 		return fmt.Errorf("field `PageName` must equal to the base name of the working directory.")
@@ -142,7 +165,7 @@ func (b Book) CheckRequirementsForParsing(workingDir string) error {
 
 // Close properly deallocates elements in the Book object such as
 // maps, and calls Chapter.Close for each Chapter in Book.Chapters.
-func (b Book) Close() {
+func (b *Book) Close() {
 	clear(b.Params)
 
 	for _, c := range b.Chapters {
@@ -174,6 +197,6 @@ type Chapter struct {
 
 // Close properly deallocates any elements in the Chapter object such
 // as maps.
-func (c Chapter) Close() {
+func (c *Chapter) Close() {
 	clear(c.Params)
 }
