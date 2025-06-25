@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 
@@ -231,6 +232,21 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	}
 	b.Content.HTML = contentHTML
 
+	// Set dates
+	if b.DatePublished.IsZero() {
+		datePublished, ok := b.Params["date"].(time.Time)
+		if ok && !datePublished.IsZero() {
+			b.DatePublished = datePublished
+		}
+	}
+
+	if b.DateModified.IsZero() {
+		dateMod, ok := b.Params["lastmod"].(time.Time)
+		if ok && !dateMod.IsZero() {
+			b.DateModified = dateMod
+		}
+	}
+
 	// ---
 	// TODO: Check existence of files like cover image
 	// ---
@@ -285,6 +301,7 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	return b, nil
 }
 
+// Decode file path with .md extension into a Chapter.
 func DecodeChapter(path string, parent *Book) (Chapter, error) {
 	rawMarkdown, err := os.ReadFile(path)
 	chapterSlug := strings.TrimSuffix(filepath.Base(path), ".md")
@@ -305,6 +322,38 @@ func DecodeChapter(path string, parent *Book) (Chapter, error) {
 	c.Params = metadata
 	if err := mapToStruct(&c, c.Params); err != nil {
 		return c, fmt.Errorf("chapter `%v`: failed to decode metadata in chapter. %w", chapterSlug, err)
+	}
+
+	datePublished, ok := c.Params["published"]
+	if ok && c.DatePublished.IsZero() {
+		switch v := datePublished.(type) {
+		case time.Time:
+			c.DatePublished = v
+		case string:
+			date, err := time.Parse(time.RFC3339, v)
+			if err != nil {
+				return c, fmt.Errorf("chapter `%v`: failed to parse RFC 3339 date format `%v`. %w", chapterSlug, time.RFC3339, err)
+			}
+			c.DatePublished = date
+		default:
+			return c, fmt.Errorf("chapter `%v`: failed to parse RFC 3339 date format `%v`. %w", chapterSlug, time.RFC3339, err)
+		}
+	}
+
+	dateMod, ok := c.Params["modified"]
+	if ok && c.DateModified.IsZero() {
+		switch v := dateMod.(type) {
+		case time.Time:
+			c.DateModified = v
+		case string:
+			date, err := time.Parse(time.RFC3339, v)
+			if err != nil {
+				return c, fmt.Errorf("chapter `%v`: failed to parse RFC 3339 date format `%v`. %w", chapterSlug, time.RFC3339, err)
+			}
+			c.DateModified = date
+		default:
+			return c, fmt.Errorf("chapter `%v`: failed to parse RFC 3339 date format `%v`. %w", chapterSlug, time.RFC3339, err)
+		}
 	}
 
 	return c, nil

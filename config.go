@@ -117,7 +117,7 @@ type Book struct {
 	Status           string
 	LanguageCode     string
 	DatePublished    time.Time
-	DateLastModified time.Time
+	DateModified     time.Time
 	Content          Content
 	IsStub           bool
 	Chapters         []Chapter
@@ -180,21 +180,21 @@ func (b *Book) Close() {
 //
 // NOTE: Chapter.PageName must be unique within a Book in Book.Chapters
 type Chapter struct {
-	Params           map[string]any
-	Parent           *Book
-	Previous         *Chapter
-	Next             *Chapter
-	PageName         string
-	Title            string
-	Subtitle         string
-	Description      string
-	Order            int
-	Authors          []Author
-	Copyright        string
-	LanguageCode     string
-	DatePublished    time.Time
-	DateLastModified time.Time
-	Content          Content
+	Params        map[string]any
+	Parent        *Book
+	Previous      *Chapter
+	Next          *Chapter
+	PageName      string
+	Title         string
+	Subtitle      string
+	Description   string
+	Order         int
+	Authors       []Author
+	Copyright     string
+	LanguageCode  string
+	DatePublished time.Time
+	DateModified  time.Time
+	Content       Content
 }
 
 func (c *Chapter) InitializeDefaults(workingDir string, parent *Book) {
