@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"fmt"
 	"html/template"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -234,7 +236,7 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	// ---
 
 	// ---
-	// WIP: Read chapters
+	// Read chapters
 	// ---
 	chaptersDir := filepath.Join(workingDir, "chapters")
 	items, err := os.ReadDir(chaptersDir)
@@ -259,7 +261,26 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 		b.Chapters = append(b.Chapters, c)
 	}
 
-	// TODO: sort chapters and fill Next and Previous pointers
+	// Sort chapters and fill Next and Previous pointers
+	slices.SortFunc(b.Chapters, func(x, y Chapter) int {
+		// Sort order: Order, Title.
+		// TODO: compare other fields such as DatePublished.
+		if n := cmp.Compare(x.Order, y.Order); n != 0 {
+			return n
+		}
+
+		return strings.Compare(x.Title, y.Title)
+	})
+
+	for i := range len(b.Chapters) {
+		if (i - 1) >= 0 {
+			b.Chapters[i].Previous = &b.Chapters[i-1]
+		}
+
+		if (i + 1) < len(b.Chapters) {
+			b.Chapters[i].Next = &b.Chapters[i+1]
+		}
+	}
 
 	return b, nil
 }
