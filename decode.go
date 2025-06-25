@@ -1,14 +1,73 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 
 	"github.com/BurntSushi/toml"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
+
+	"github.com/yuin/goldmark-meta"
 )
+
+var (
+	MarkdownToHTML = goldmark.New(
+		goldmark.WithExtensions(
+			meta.Meta,
+			extension.GFM,
+			extension.Footnote,
+			extension.Typographer,
+		),
+		goldmark.WithParserOptions(
+			parser.WithAttribute(),
+			parser.WithAutoHeadingID(),
+		),
+		goldmark.WithRendererOptions(),
+	)
+	MarkdownToXHTML = goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,
+			extension.Footnote,
+			extension.Typographer,
+		),
+		goldmark.WithParserOptions(
+			parser.WithAttribute(),
+			parser.WithAutoHeadingID(),
+		),
+		goldmark.WithRendererOptions(
+			html.WithXHTML(),
+		),
+	)
+)
+
+func convertMarkdownToHTML(content []byte, useXHTML bool) (template.HTML, map[string]any, error) {
+	var buffer bytes.Buffer
+	context := parser.NewContext()
+
+	var md goldmark.Markdown
+	if useXHTML {
+		md = MarkdownToXHTML
+	} else {
+		md = MarkdownToHTML
+	}
+
+	if err := md.Convert(content, &buffer, parser.WithContext(context)); err != nil {
+		return template.HTML(""), nil, err
+	}
+
+	metadata := meta.Get(context)
+
+	return template.HTML(buffer.String()), metadata, nil
+}
 
 // Decode a map m into struct s. Field/Key names are supposed to be
 // case sensitive. Credit: <https://stackoverflow.com/a/26746461>
@@ -164,6 +223,22 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	if err := b.CheckRequirementsForParsing(workingDir); err != nil {
 		return b, fmt.Errorf("book `%v`: failed to meet requirements. %w", b.PageName, err)
 	}
+
+	// ---
+	// Parse markdown
+	// ---
+	rawMarkdownPath := filepath.Join(workingDir, "index.md")
+	rawMarkdown, err := os.ReadFile(rawMarkdownPath)
+	if err != nil && os.IsExist(err) {
+		return b, fmt.Errorf("book `%v`: failed to read book content file at `%v`, %w", rawMarkdownPath, err)
+	}
+	b.Content.Raw = string(rawMarkdown)
+
+	contentHTML, _, err := convertMarkdownToHTML(rawMarkdown, false)
+	if err != nil {
+		return b, fmt.Errorf("book `%v`: failed to convert markdown to HTML. %w", err)
+	}
+	b.Content.HTML = contentHTML
 
 	return b, nil
 }
