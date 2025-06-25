@@ -6,13 +6,20 @@ import (
 	"path/filepath"
 )
 
-var EnablePlainOutput = false
+const Version = "0.1"
+
+var (
+	EnablePlainOutput = false
+	ProgramName       = "bookgen"
+)
 
 func main() {
 	// ---
 	// Read CLI arguments
 	// ---
 	// Home-made cli argument parsing
+	ProgramName = os.Args[0]
+
 	var workingDirFlag, outputDirFlag string
 	setWorkingDirFlag, setOutputDirFlag, setPlainFlag := false, false, false
 
@@ -40,7 +47,7 @@ func main() {
 			} else if arg == "-i" || arg == "--input-directory" {
 				// Flag requires arg
 				if (i + 1) >= len(os.Args) {
-					errorExit(1, "missing value for flag '%s", arg)
+					errorExit(1, "missing value for flag '%v. See '%v --help' for more info.", arg, ProgramName)
 				}
 
 				workingDirFlag = os.Args[i+1]
@@ -49,14 +56,14 @@ func main() {
 			} else if arg == "-o" || arg == "--output-directory" {
 				// Flag requires arg
 				if (i + 1) >= len(os.Args) {
-					errorExit(1, "missing value for flag '%s'", arg)
+					errorExit(1, "missing value for flag '%v'. See '%v --help' for more info.", arg, ProgramName)
 				}
 
 				outputDirFlag = os.Args[i+1]
 				setOutputDirFlag = true
 				i++ // next arg is not a flag
 			} else {
-				errorExit(1, "unknown flag '%s'", arg)
+				errorExit(1, "unknown flag '%v'.", arg)
 			}
 		}
 	}
@@ -74,21 +81,16 @@ func main() {
 
 	// output dir cannot be == working dir
 	if filepath.Clean(outputDirFlag) == filepath.Clean(workingDirFlag) {
-		errorExit(1, "cannot set output directory to be the same as working/input directory")
+		errorExit(1, "output directory cannot be equal to the working/input directory ('%s' and '%s' reference the same path).", workingDirFlag, outputDirFlag)
 	}
 
 	// ---
 	// Parse collection
 	// ---
 
-	tomlBody, err := os.ReadFile(filepath.Join(workingDirFlag, "bookgen.toml"))
+	collection, err := DecodeCollection(workingDirFlag)
 	if err != nil {
-		errorExit(1, err.Error())
-	}
-
-	collection, err := DecodeCollection([]byte(tomlBody), workingDirFlag)
-	if err != nil {
-		errorExit(1, err.Error())
+		errorExit(1, "%w", err)
 	}
 
 	fmt.Printf("%#v\n", collection)

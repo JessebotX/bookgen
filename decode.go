@@ -13,7 +13,7 @@ import (
 // Decode a map m into struct s. Field/Key names are supposed to be
 // case sensitive. Credit: <https://stackoverflow.com/a/26746461>
 func mapToStruct(s any, m map[string]any) error {
-	for fieldName, v := range m {
+	for fieldName, unparsedValue := range m {
 		reflectField := reflect.ValueOf(s).Elem()
 		reflectFieldValue := reflectField.FieldByNameFunc(func(n string) bool {
 			return strings.EqualFold(n, fieldName)
@@ -25,39 +25,51 @@ func mapToStruct(s any, m map[string]any) error {
 		}
 
 		if !reflectFieldValue.CanSet() {
-			return fmt.Errorf("cannot set a value for field '%s'", fieldName)
+			return fmt.Errorf("value of field '%s' cannot be changed.", fieldName)
 		}
 
 		fieldType := reflectFieldValue.Type()
-		value := reflect.ValueOf(v)
+		fieldValue := reflect.ValueOf(unparsedValue)
 		if fieldType == reflect.TypeOf(Internal{}) {
 			internalSettings := Internal{
 				GenerateEPUB: true,
 			}
 
-			if _, ok := v.(map[string]any); !ok {
-				return fmt.Errorf("internal settings must be defined as a toml map")
+			if _, ok := unparsedValue.(map[string]any); !ok {
+				return fmt.Errorf("internal settings format invalid. Ensure it is in the form of a map of key/value pairs.")
 			}
 
-			if err := mapToStruct(&internalSettings, v.(map[string]any)); err != nil {
+			if err := mapToStruct(&internalSettings, unparsedValue.(map[string]any)); err != nil {
 				return err
 			}
-			value = reflect.ValueOf(internalSettings)
+			fieldValue = reflect.ValueOf(internalSettings)
 		}
 
-		if fieldType != value.Type() {
+		if fieldType != fieldValue.Type() {
 			return fmt.Errorf(
-				"cannot set field '%v' (%v) to value '%v' (%v) because of mismatch types. Value must be of type %v",
-				fieldName, fieldType, value, value.Type(), fieldType)
+				"mismatch types: value '%v' (%v) must have the same type as field '%v' (%v).",
+				fieldValue, fieldValue.Type(), fieldName, fieldType)
 		}
 
-		reflectFieldValue.Set(value)
+		reflectFieldValue.Set(fieldValue)
 	}
 	return nil
 }
 
-// Decode data and files into a collection of books
-func DecodeCollection(data []byte, workingDir string) (Collection, error) {
+// Decode a structured directory into a Collection.
+func DecodeCollection(workingDir string) (Collection, error) {
+	// ---
+	// Read file
+	// ---
+	pathTOML := filepath.Join(workingDir, "bookgen.toml")
+	dataTOML, err := os.ReadFile(pathTOML)
+	if err != nil {
+		return Collection{}, fmt.Errorf("collection: failed to read file '%v'. %w", pathTOML, err)
+	}
+
+	// ---
+	// Decode TOML
+	// ---
 	c := Collection{
 		Internal: Internal{
 			GenerateEPUB: true,
@@ -65,22 +77,19 @@ func DecodeCollection(data []byte, workingDir string) (Collection, error) {
 		LanguageCode: "en",
 	}
 
-	// ---
-	// Decode TOML
-	// ---
-	if _, err := toml.Decode(string(data), &c.Params); err != nil {
-		return c, fmt.Errorf("failed to decode collection toml data. %w", err)
+	if _, err := toml.Decode(string(dataTOML), &c.Params); err != nil {
+		return c, fmt.Errorf("collection: failed to decode TOML in '%v'. %w", pathTOML, err)
 	}
 
 	if err := mapToStruct(&c, c.Params); err != nil {
-		return c, fmt.Errorf("failed to decode collection toml data. %w", err)
+		return c, fmt.Errorf("collection: failed to decode TOML in '%v'. %w", pathTOML, err)
 	}
 
 	// ---
-	// Validate
+	// Check requirements
 	// ---
-	if err := c.ValidateFields(); err != nil {
-		return c, fmt.Errorf("failed to validate collection fields. %w", err)
+	if err := c.CheckRequirementsForParsing(); err != nil {
+		return c, fmt.Errorf("collection: failed to meet requirements. %w", err)
 	}
 
 	// ---
@@ -89,12 +98,13 @@ func DecodeCollection(data []byte, workingDir string) (Collection, error) {
 	c.Books = make([]Book, 0)
 	booksDir := filepath.Join(workingDir, "books")
 	items, err := os.ReadDir(booksDir)
-	if err != nil && os.IsNotExist(err) {
-		return c, nil
-	}
-
 	if err != nil {
-		return c, fmt.Errorf("failed to read books directory %v. %w", booksDir, err)
+		if os.IsNotExist(err) { // no error, do nothing
+			return c, nil
+		}
+
+		// error
+		return c, fmt.Errorf("collection: failed to read books directory %v. %w", booksDir, err)
 	}
 
 	for _, item := range items {
@@ -103,12 +113,7 @@ func DecodeCollection(data []byte, workingDir string) (Collection, error) {
 		}
 
 		bookWorkingDir := filepath.Join(booksDir, item.Name())
-		tomlBody, err := os.ReadFile(filepath.Join(bookWorkingDir, "bookgen-book.toml"))
-		if err != nil {
-			return c, err
-		}
-
-		book, err := DecodeBook(tomlBody, bookWorkingDir, &c)
+		book, err := DecodeBook(bookWorkingDir, &c)
 		if err != nil {
 			return c, err
 		}
@@ -119,7 +124,20 @@ func DecodeCollection(data []byte, workingDir string) (Collection, error) {
 	return c, nil
 }
 
-func DecodeBook(data []byte, workingDir string, parent *Collection) (Book, error) {
+// Decode a structured directory into a Book.
+func DecodeBook(workingDir string, parent *Collection) (Book, error) {
+	// ---
+	// Read file
+	// ---
+	pathTOML := filepath.Join(workingDir, "bookgen-book.toml")
+	dataTOML, err := os.ReadFile(pathTOML)
+	if err != nil {
+		return Book{}, fmt.Errorf("book: failed to read file '%v'. %w", err)
+	}
+
+	// ---
+	// Decode toml
+	// ---
 	b := Book{
 		Parent:   parent,
 		PageName: filepath.Base(workingDir),
@@ -130,23 +148,19 @@ func DecodeBook(data []byte, workingDir string, parent *Collection) (Book, error
 		b.LanguageCode = parent.LanguageCode
 	}
 
-	// ---
-	// Decode toml
-	// ---
-
-	if _, err := toml.Decode(string(data), &b.Params); err != nil {
-		return b, fmt.Errorf("failed to decode book toml data @ %v. %w", workingDir, err)
+	if _, err := toml.Decode(string(dataTOML), &b.Params); err != nil {
+		return b, fmt.Errorf("book '%v': failed to decode TOML in '%v'. %w", b.PageName, pathTOML, err)
 	}
 
 	if err := mapToStruct(&b, b.Params); err != nil {
-		return b, fmt.Errorf("failed to decode book toml data @ %v. %w", workingDir, err)
+		return b, fmt.Errorf("book '%v': failed to decode TOML in '%v'. %w", b.PageName, pathTOML, err)
 	}
 
 	// ---
-	// Check validity
+	// Check requirements
 	// ---
-	if err := b.ValidateFields(workingDir); err != nil {
-		return b, fmt.Errorf("failed to validate book fields for %v. %w", workingDir, err)
+	if err := b.CheckRequirementsForParsing(workingDir); err != nil {
+		return b, fmt.Errorf("book '%v': failed to meet requirements. %w", b.PageName, err)
 	}
 
 	return b, nil
