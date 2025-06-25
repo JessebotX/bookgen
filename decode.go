@@ -11,8 +11,9 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"errors"
 
-	"github.com/BurntSushi/toml"
+	yaml "github.com/goccy/go-yaml"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -51,6 +52,282 @@ var (
 		),
 	)
 )
+
+// Decode a structured directory with a bookgen configuration file
+// into a Collection.
+func DecodeCollection(workingDir string) (Collection, error) {
+	// ---
+	// Read file
+	// ---
+	pathConfig := filepath.Join(workingDir, "bookgen.yml")
+	dataConfig, err := os.ReadFile(pathConfig)
+	if err != nil {
+		return Collection{}, fmt.Errorf("collection: failed to read file `%v`. %w", pathConfig, err)
+	}
+
+	// ---
+	// Decode config
+	// ---
+	var c Collection
+	c.InitializeDefaults()
+
+	if err := yaml.Unmarshal(dataConfig, &c.Params); err != nil {
+		return c, fmt.Errorf("collection: failed to decode YAML in `%v`. %w", pathConfig, err)
+	}
+
+	if err := mapToStruct(&c, c.Params); err != nil {
+		return c, fmt.Errorf("collection: failed to decode YAML in `%v`. %w", pathConfig, err)
+	}
+
+	// ---
+	// Check requirements
+	// ---
+	if err := c.CheckRequirementsForParsing(); err != nil {
+		return c, fmt.Errorf("collection: failed to meet requirements. %w", err)
+	}
+
+	// ---
+	// Decode books
+	// ---
+	c.Books = make([]Book, 0)
+	booksDir := filepath.Join(workingDir, "books")
+	items, err := os.ReadDir(booksDir)
+	if err != nil {
+		if os.IsNotExist(err) { // no error, do nothing
+			return c, nil
+		}
+
+		// error
+		return c, fmt.Errorf("collection: failed to read books directory %v. %w", booksDir, err)
+	}
+
+	for _, item := range items {
+		if !item.IsDir() {
+			continue
+		}
+
+		bookWorkingDir := filepath.Join(booksDir, item.Name())
+		book, err := DecodeBook(bookWorkingDir, &c)
+		if err != nil {
+			return c, err
+		}
+
+		c.Books = append(c.Books, book)
+	}
+
+	return c, nil
+}
+
+// Decode a structured directory with a bookgen-book configuration
+// file into a Book.
+func DecodeBook(workingDir string, parent *Collection) (Book, error) {
+	// ---
+	// Read file
+	// ---
+	pathConfig := filepath.Join(workingDir, "bookgen-book.yml")
+	dataConfig, err := os.ReadFile(pathConfig)
+	if err != nil {
+		return Book{}, fmt.Errorf("book: failed to read file `%v`. %w", err)
+	}
+
+	// ---
+	// Decode config
+	// ---
+	var b Book
+	b.InitializeDefaults(workingDir, parent)
+
+	if err := yaml.Unmarshal(dataConfig, &b.Params); err != nil {
+		return b, fmt.Errorf("book `%v`: failed to decode YAML in `%v`. %w", b.PageName, pathConfig, err)
+	}
+
+	if err := mapToStruct(&b, b.Params); err != nil {
+		return b, fmt.Errorf("book `%v`: failed to decode YAML in `%v`. %w", b.PageName, pathConfig, err)
+	}
+
+	// ---
+	// Check requirements
+	// ---
+	if err := b.CheckRequirementsForParsing(workingDir); err != nil {
+		return b, fmt.Errorf("book `%v`: failed to meet requirements. %w", b.PageName, err)
+	}
+
+	// ---
+	// Parse markdown
+	// ---
+	rawMarkdownPath := filepath.Join(workingDir, "index.md")
+	rawMarkdown, err := os.ReadFile(rawMarkdownPath)
+	if err != nil && os.IsExist(err) {
+		return b, fmt.Errorf("book `%v`: failed to read book content file at `%v`, %w", b.PageName, rawMarkdownPath, err)
+	}
+	b.Content.Raw = string(rawMarkdown)
+
+	contentHTML, _, err := convertMarkdownToHTML(rawMarkdown, false)
+	if err != nil {
+		return b, fmt.Errorf("book `%v`: failed to convert markdown to HTML. %w", b.PageName, err)
+	}
+	b.Content.HTML = contentHTML
+
+	datePubParam, ok := b.Params["published"]
+	if ok && b.DatePublished.IsZero() {
+		b.DatePublished, err = getTimeFromParam(datePubParam)
+		if err != nil {
+			return b, fmt.Errorf("book `%v`: failed to parse date published: %w", b.PageName, err)
+		}
+	}
+
+	dateModParam, ok := b.Params["modified"]
+	if ok && b.DateModified.IsZero() {
+		b.DateModified, err = getTimeFromParam(dateModParam)
+		if err != nil {
+			return b, fmt.Errorf("book `%v`: failed to parse date modified: %w", b.PageName, err)
+		}
+	}
+
+	// ---
+	// TODO: Check existence of files like cover image
+	// ---
+
+	// ---
+	// Read chapters
+	// ---
+	chaptersDir := filepath.Join(workingDir, "chapters")
+	items, err := os.ReadDir(chaptersDir)
+	if err != nil {
+		if os.IsExist(err) {
+			return b, fmt.Errorf("book `%v`: failed to read chapters directory at `%v`. %w", b.PageName, chaptersDir, err)
+		}
+	}
+
+	b.Chapters = make([]Chapter, 0)
+	for _, item := range items {
+		if item.IsDir() || !strings.HasSuffix(item.Name(), ".md") {
+			continue
+		}
+
+		chapterSourcePath := filepath.Join(chaptersDir, item.Name())
+		c, err := DecodeChapter(chapterSourcePath, &b)
+		if err != nil {
+			return b, fmt.Errorf("book %v: %w", b.PageName, err)
+		}
+
+		b.Chapters = append(b.Chapters, c)
+	}
+
+	// Sort chapters and fill Next and Previous pointers
+	slices.SortFunc(b.Chapters, func(x, y Chapter) int {
+		// Sort order: Order, Title.
+		// TODO: compare other fields such as DatePublished.
+		if n := cmp.Compare(x.Order, y.Order); n != 0 {
+			return n
+		}
+
+		return strings.Compare(x.Title, y.Title)
+	})
+
+	for i := range len(b.Chapters) {
+		if (i - 1) >= 0 {
+			b.Chapters[i].Previous = &b.Chapters[i-1]
+		}
+
+		if (i + 1) < len(b.Chapters) {
+			b.Chapters[i].Next = &b.Chapters[i+1]
+		}
+	}
+
+	return b, nil
+}
+
+// Decode file path with .md extension into a Chapter.
+func DecodeChapter(path string, parent *Book) (Chapter, error) {
+	if filepath.Ext(path) != ".md" {
+		return Chapter{}, fmt.Errorf("chapter `%v`: missing `.md` (markdown) file extension", path)
+	}
+
+	chapterSlug := strings.TrimSuffix(filepath.Base(path), ".md")
+
+	rawMarkdown, err := os.ReadFile(path)
+	if err != nil {
+		return Chapter{}, fmt.Errorf("chapter `%v`: failed to read file at `%v`. %w", chapterSlug, path, err)
+	}
+
+	var c Chapter
+	c.InitializeDefaults(path, parent)
+
+	c.Content.Raw = string(rawMarkdown)
+	contentHTML, metadata, err := convertMarkdownToHTML(rawMarkdown, false)
+	if err != nil {
+		return c, fmt.Errorf("chapter `%v`: failed to convert markdown to HTML. %w", chapterSlug, err)
+	}
+	c.Content.HTML = contentHTML
+
+	c.Params = metadata
+	if err := mapToStruct(&c, c.Params); err != nil {
+		return c, fmt.Errorf("chapter `%v`: failed to decode metadata in chapter. %w", chapterSlug, err)
+	}
+
+	datePubParam, ok := c.Params["published"]
+	if ok && c.DatePublished.IsZero() {
+		c.DatePublished, err = getTimeFromParam(datePubParam)
+		if err != nil {
+			return c, fmt.Errorf("chapter `%v`: failed to parse date published: %w", chapterSlug, err)
+		}
+	}
+
+	dateModParam, ok := c.Params["modified"]
+	if ok && c.DateModified.IsZero() {
+		c.DateModified, err = getTimeFromParam(dateModParam)
+		if err != nil {
+			return c, fmt.Errorf("chapter `%v`: failed to parse date modified: %w", chapterSlug, err)
+		}
+	}
+
+	return c, nil
+}
+
+// Assumes param exists.
+func getTimeFromParam(param any) (time.Time, error) {
+	switch v := param.(type) {
+	case time.Time:
+		return v, nil
+	case string:
+		date, err := stringToTime(v)
+		if err != nil {
+			return time.Time{}, err
+		}
+		return date, nil
+	default:
+		return time.Time{}, fmt.Errorf("incorrect parameter type given for date format. Must be either `string` or `time.Time`.")
+	}
+}
+
+// Convert a date string input into time. String argument must be in
+// the correct format or it will return an error.
+func stringToTime(sTime string) (time.Time, error) {
+	formats := []string{
+		"2006",
+		"2006-01",
+		"2006-01-02",
+		"2006-01-02 15:04",
+		"2006-01-02T15:04",
+		"2006-01-02 15:04Z07:00",
+		"2006-01-02T15:04Z07:00",
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05Z07:00",
+		"2006-01-02T15:04:05Z07:00",
+	}
+
+	var errs error
+	for _, format := range formats {
+		date, err := time.Parse(format, sTime)
+		if err == nil {
+			return date, nil
+		}
+		errs = errors.Join(errs, err)
+	}
+
+	return time.Time{}, fmt.Errorf("date string `%v` does not match any of the following formats:\n%w", sTime, errs)
+}
 
 func convertMarkdownToHTML(content []byte, useXHTML bool) (template.HTML, map[string]any, error) {
 	var buffer bytes.Buffer
@@ -116,245 +393,4 @@ func mapToStruct(s any, m map[string]any) error {
 		reflectFieldValue.Set(fieldValue)
 	}
 	return nil
-}
-
-// Decode a structured directory with a bookgen configuration file
-// into a Collection.
-func DecodeCollection(workingDir string) (Collection, error) {
-	// ---
-	// Read file
-	// ---
-	pathTOML := filepath.Join(workingDir, "bookgen.toml")
-	dataTOML, err := os.ReadFile(pathTOML)
-	if err != nil {
-		return Collection{}, fmt.Errorf("collection: failed to read file `%v`. %w", pathTOML, err)
-	}
-
-	// ---
-	// Decode TOML
-	// ---
-	var c Collection
-	c.InitializeDefaults()
-
-	if _, err := toml.Decode(string(dataTOML), &c.Params); err != nil {
-		return c, fmt.Errorf("collection: failed to decode TOML in `%v`. %w", pathTOML, err)
-	}
-
-	if err := mapToStruct(&c, c.Params); err != nil {
-		return c, fmt.Errorf("collection: failed to decode TOML in `%v`. %w", pathTOML, err)
-	}
-
-	// ---
-	// Check requirements
-	// ---
-	if err := c.CheckRequirementsForParsing(); err != nil {
-		return c, fmt.Errorf("collection: failed to meet requirements. %w", err)
-	}
-
-	// ---
-	// Decode books
-	// ---
-	c.Books = make([]Book, 0)
-	booksDir := filepath.Join(workingDir, "books")
-	items, err := os.ReadDir(booksDir)
-	if err != nil {
-		if os.IsNotExist(err) { // no error, do nothing
-			return c, nil
-		}
-
-		// error
-		return c, fmt.Errorf("collection: failed to read books directory %v. %w", booksDir, err)
-	}
-
-	for _, item := range items {
-		if !item.IsDir() {
-			continue
-		}
-
-		bookWorkingDir := filepath.Join(booksDir, item.Name())
-		book, err := DecodeBook(bookWorkingDir, &c)
-		if err != nil {
-			return c, err
-		}
-
-		c.Books = append(c.Books, book)
-	}
-
-	return c, nil
-}
-
-// Decode a structured directory with a bookgen-book configuration
-// file into a Book.
-func DecodeBook(workingDir string, parent *Collection) (Book, error) {
-	// ---
-	// Read file
-	// ---
-	pathTOML := filepath.Join(workingDir, "bookgen-book.toml")
-	dataTOML, err := os.ReadFile(pathTOML)
-	if err != nil {
-		return Book{}, fmt.Errorf("book: failed to read file `%v`. %w", err)
-	}
-
-	// ---
-	// Decode toml
-	// ---
-	var b Book
-	b.InitializeDefaults(workingDir, parent)
-
-	if _, err := toml.Decode(string(dataTOML), &b.Params); err != nil {
-		return b, fmt.Errorf("book `%v`: failed to decode TOML in `%v`. %w", b.PageName, pathTOML, err)
-	}
-
-	if err := mapToStruct(&b, b.Params); err != nil {
-		return b, fmt.Errorf("book `%v`: failed to decode TOML in `%v`. %w", b.PageName, pathTOML, err)
-	}
-
-	// ---
-	// Check requirements
-	// ---
-	if err := b.CheckRequirementsForParsing(workingDir); err != nil {
-		return b, fmt.Errorf("book `%v`: failed to meet requirements. %w", b.PageName, err)
-	}
-
-	// ---
-	// Parse markdown
-	// ---
-	rawMarkdownPath := filepath.Join(workingDir, "index.md")
-	rawMarkdown, err := os.ReadFile(rawMarkdownPath)
-	if err != nil && os.IsExist(err) {
-		return b, fmt.Errorf("book `%v`: failed to read book content file at `%v`, %w", b.PageName, rawMarkdownPath, err)
-	}
-	b.Content.Raw = string(rawMarkdown)
-
-	contentHTML, _, err := convertMarkdownToHTML(rawMarkdown, false)
-	if err != nil {
-		return b, fmt.Errorf("book `%v`: failed to convert markdown to HTML. %w", b.PageName, err)
-	}
-	b.Content.HTML = contentHTML
-
-	// Set dates
-	if b.DatePublished.IsZero() {
-		datePublished, ok := b.Params["date"].(time.Time)
-		if ok && !datePublished.IsZero() {
-			b.DatePublished = datePublished
-		}
-	}
-
-	if b.DateModified.IsZero() {
-		dateMod, ok := b.Params["lastmod"].(time.Time)
-		if ok && !dateMod.IsZero() {
-			b.DateModified = dateMod
-		}
-	}
-
-	// ---
-	// TODO: Check existence of files like cover image
-	// ---
-
-	// ---
-	// Read chapters
-	// ---
-	chaptersDir := filepath.Join(workingDir, "chapters")
-	items, err := os.ReadDir(chaptersDir)
-	if err != nil {
-		if os.IsExist(err) {
-			return b, fmt.Errorf("book `%v`: failed to read chapters directory at `%v`. %w", b.PageName, chaptersDir, err)
-		}
-	}
-
-	b.Chapters = make([]Chapter, 0)
-	for _, item := range items {
-		if item.IsDir() || !strings.HasSuffix(item.Name(), ".md") {
-			continue
-		}
-
-		chapterSourcePath := filepath.Join(chaptersDir, item.Name())
-		c, err := DecodeChapter(chapterSourcePath, &b)
-		if err != nil {
-			return b, fmt.Errorf("book %v: %w", b.PageName, err)
-		}
-
-		b.Chapters = append(b.Chapters, c)
-	}
-
-	// Sort chapters and fill Next and Previous pointers
-	slices.SortFunc(b.Chapters, func(x, y Chapter) int {
-		// Sort order: Order, Title.
-		// TODO: compare other fields such as DatePublished.
-		if n := cmp.Compare(x.Order, y.Order); n != 0 {
-			return n
-		}
-
-		return strings.Compare(x.Title, y.Title)
-	})
-
-	for i := range len(b.Chapters) {
-		if (i - 1) >= 0 {
-			b.Chapters[i].Previous = &b.Chapters[i-1]
-		}
-
-		if (i + 1) < len(b.Chapters) {
-			b.Chapters[i].Next = &b.Chapters[i+1]
-		}
-	}
-
-	return b, nil
-}
-
-// Decode file path with .md extension into a Chapter.
-func DecodeChapter(path string, parent *Book) (Chapter, error) {
-	rawMarkdown, err := os.ReadFile(path)
-	chapterSlug := strings.TrimSuffix(filepath.Base(path), ".md")
-	if err != nil {
-		return Chapter{}, fmt.Errorf("chapter `%v`: failed to read file at `%v`. %w", chapterSlug, path, err)
-	}
-
-	var c Chapter
-	c.InitializeDefaults(path, parent)
-
-	c.Content.Raw = string(rawMarkdown)
-	contentHTML, metadata, err := convertMarkdownToHTML(rawMarkdown, false)
-	if err != nil {
-		return c, fmt.Errorf("chapter `%v`: failed to convert markdown to HTML. %w", chapterSlug, err)
-	}
-	c.Content.HTML = contentHTML
-
-	c.Params = metadata
-	if err := mapToStruct(&c, c.Params); err != nil {
-		return c, fmt.Errorf("chapter `%v`: failed to decode metadata in chapter. %w", chapterSlug, err)
-	}
-
-	datePublished, ok := c.Params["published"]
-	if ok && c.DatePublished.IsZero() {
-		switch v := datePublished.(type) {
-		case time.Time:
-			c.DatePublished = v
-		case string:
-			date, err := time.Parse(time.RFC3339, v)
-			if err != nil {
-				return c, fmt.Errorf("chapter `%v`: failed to parse RFC 3339 date format `%v`. %w", chapterSlug, time.RFC3339, err)
-			}
-			c.DatePublished = date
-		default:
-			return c, fmt.Errorf("chapter `%v`: failed to parse RFC 3339 date format `%v`. %w", chapterSlug, time.RFC3339, err)
-		}
-	}
-
-	dateMod, ok := c.Params["modified"]
-	if ok && c.DateModified.IsZero() {
-		switch v := dateMod.(type) {
-		case time.Time:
-			c.DateModified = v
-		case string:
-			date, err := time.Parse(time.RFC3339, v)
-			if err != nil {
-				return c, fmt.Errorf("chapter `%v`: failed to parse RFC 3339 date format `%v`. %w", chapterSlug, time.RFC3339, err)
-			}
-			c.DateModified = date
-		default:
-			return c, fmt.Errorf("chapter `%v`: failed to parse RFC 3339 date format `%v`. %w", chapterSlug, time.RFC3339, err)
-		}
-	}
-
-	return c, nil
 }

@@ -94,6 +94,10 @@ func main() {
 	}
 
 	fmt.Printf("%#v\n", collection)
+	fmt.Println("---")
+	fmt.Printf("pub=%v\nmod=%v\n\n", collection.Books[0].DatePublished, collection.Books[0].DateModified)
+	fmt.Printf("pub=%v\nmod=%v\n\n", collection.Books[0].Chapters[0].DatePublished, collection.Books[0].Chapters[0].DateModified)
+	fmt.Println("---")
 }
 
 func errorExit(code int, format string, a ...any) {
