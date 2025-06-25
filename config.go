@@ -23,8 +23,9 @@ type Author struct {
 
 // Content represents unparsed and parsed text content found in books.
 type Content struct {
-	Raw  string
-	HTML template.HTML
+	Raw   string
+	HTML  template.HTML
+	XHTML template.HTML
 }
 
 // Internal represents the app's settings that may be useful
