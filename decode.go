@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"cmp"
+	"errors"
 	"fmt"
 	"html/template"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-	"errors"
 
 	yaml "github.com/goccy/go-yaml"
 

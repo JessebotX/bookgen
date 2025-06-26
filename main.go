@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const Version = "0.1"
@@ -88,16 +89,20 @@ func main() {
 	// Parse collection
 	// ---
 
+	timeStart := time.Now()
+
 	collection, err := DecodeCollection(workingDirFlag)
 	if err != nil {
 		errorExit(1, err.Error())
 	}
 
-	fmt.Printf("%#v\n", collection)
-	fmt.Println("---")
-	fmt.Printf("pub=%v\nmod=%v\n\n", collection.Books[0].DatePublished, collection.Books[0].DateModified)
-	fmt.Printf("pub=%v\nmod=%v\n\n", collection.Books[0].Chapters[0].DatePublished, collection.Books[0].Chapters[0].DateModified)
-	fmt.Println("---")
+	if err := RenderCollectionToWebsite(&collection, workingDirFlag, outputDirFlag); err != nil {
+		errorExit(1, err.Error())
+	}
+
+	timeElapsed := time.Since(timeStart)
+
+	fmt.Printf(terminalPrintBold("Done rendering!")+" (%v)\n", timeElapsed)
 }
 
 func errorExit(code int, format string, a ...any) {
