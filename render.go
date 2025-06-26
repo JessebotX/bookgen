@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"os"
@@ -25,7 +26,7 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 
 	if _, err := os.Stat(baseTemplatePath); err == nil {
 		currentParsing = append(currentParsing, baseTemplatePath)
-	} else if err != nil && !os.IsNotExist(err) {
+	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("failed to stat base template `%v`. %w", baseTemplatePath, err)
 	}
 
@@ -55,10 +56,31 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 	if err != nil {
 		return fmt.Errorf("failed to create collection index file. %w", err)
 	}
-	defer outIndex.Close()
 
 	if err := collectionTemplate.ExecuteTemplate(outIndex, "index.html", c); err != nil {
 		return fmt.Errorf("failed to write collection index file. %w", err)
+	}
+
+	if err := outIndex.Close(); err != nil {
+		return fmt.Errorf("failed to close collection index file. %w", err)
+	}
+
+	for _, book := range c.Books {
+		// bookWorkingDir := filepath.Join(workingDir, "books", book.PageName)
+		bookOutputDir := filepath.Join(outputDir, book.PageName)
+		if err := os.MkdirAll(bookOutputDir, os.ModeDir); err != nil {
+			return fmt.Errorf("failed to create book `%v` directory. %w", book.PageName, err)
+		}
+
+		outBook, err := os.Create(filepath.Join(bookOutputDir, "index.html"))
+		if err != nil {
+			return fmt.Errorf("failed to create book `%v` index file. %w", book.PageName, err)
+		}
+		defer outBook.Close()
+
+		if err := bookTemplate.ExecuteTemplate(outBook, "_book.html", book); err != nil {
+			return fmt.Errorf("failed to write book `%v` index file. %w", book.PageName, err)
+		}
 	}
 
 	return nil
