@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"html/template"
 	"os"
@@ -10,7 +9,7 @@ import (
 
 func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) error {
 	layoutsDir := filepath.Join(workingDir, "layouts")
-	baseTemplatePath := filepath.Join(layoutsDir, "_base.html")
+	//baseTemplatePath := filepath.Join(layoutsDir, "_base.html")
 	collectionTemplatePath := filepath.Join(layoutsDir, "index.html")
 	bookTemplatePath := filepath.Join(layoutsDir, "_book.html")
 	chapterTemplatePath := filepath.Join(layoutsDir, "_chapter.html")
@@ -22,32 +21,37 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 	// ---
 	// Read templates
 	// ---
-	currentParsing := []string{collectionTemplatePath}
-
-	if _, err := os.Stat(baseTemplatePath); err == nil {
-		currentParsing = append(currentParsing, baseTemplatePath)
-	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("failed to stat base template `%v`. %w", baseTemplatePath, err)
+	templateFileNames := []string{collectionTemplatePath}
+	fileNames, err := filepath.Glob("_*_t.html")
+	if err == nil {
+		templateFileNames = append(templateFileNames, fileNames...)
 	}
 
-	collectionTemplate, err := template.ParseFiles(currentParsing...)
+	// currentParsing := []string{collectionTemplatePath}
+
+	// if _, err := os.Stat(baseTemplatePath); err == nil {
+	// 	currentParsing = append(currentParsing, baseTemplatePath)
+	// } else if err != nil && !errors.Is(err, os.ErrNotExist) {
+	// 	return fmt.Errorf("failed to stat base template `%v`. %w", baseTemplatePath, err)
+	// }
+
+	templateFileNames[0] = collectionTemplatePath
+	collectionTemplate, err := template.ParseFiles(templateFileNames...)
 	if err != nil {
 		return fmt.Errorf("failed to parse collection template. %w", err)
 	}
 
-	currentParsing[0] = bookTemplatePath
-	bookTemplate, err := template.ParseFiles(currentParsing...)
+	templateFileNames[0] = bookTemplatePath
+	bookTemplate, err := template.ParseFiles(templateFileNames...)
 	if err != nil {
 		return fmt.Errorf("failed to parse book template. %w", err)
 	}
 
-	currentParsing[0] = chapterTemplatePath
-	chapterTemplate, err := template.ParseFiles(currentParsing...)
+	templateFileNames[0] = chapterTemplatePath
+	chapterTemplate, err := template.ParseFiles(templateFileNames...)
 	if err != nil {
 		return fmt.Errorf("failed to parse chapter template. %w", err)
 	}
-
-	_, _ = bookTemplate, chapterTemplate
 
 	// ---
 	// Collection index
@@ -80,6 +84,27 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 
 		if err := bookTemplate.ExecuteTemplate(outBook, "_book.html", book); err != nil {
 			return fmt.Errorf("failed to write book `%v` index file. %w", book.PageName, err)
+		}
+
+		if err := renderBookChapters(book.Chapters, chapterTemplate, bookOutputDir); err != nil {
+			return fmt.Errorf("failed to write book `%v` chapter file. %w", book.PageName, err)
+		}
+
+	}
+
+	return nil
+}
+
+func renderBookChapters(chapters []Chapter, chapterTemplate *template.Template, bookOutputDir string) error {
+	for _, chapter := range chapters {
+		fChapter, err := os.Create(filepath.Join(bookOutputDir, chapter.PageName+".html"))
+		if err != nil {
+			return err
+		}
+		defer fChapter.Close()
+
+		if err := chapterTemplate.ExecuteTemplate(fChapter, "_chapter.html", chapter); err != nil {
+			return err
 		}
 	}
 

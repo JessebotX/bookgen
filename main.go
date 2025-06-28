@@ -100,9 +100,17 @@ func main() {
 		errorExit(1, err.Error())
 	}
 
+	totalFiles := 0
+	for _, b := range collection.Books {
+		for _ = range b.Chapters {
+			totalFiles++
+		}
+		totalFiles++
+	}
+
 	timeElapsed := time.Since(timeStart)
 
-	fmt.Printf(terminalPrintBold("Done rendering!")+" (%v)\n", timeElapsed)
+	fmt.Printf(terminalPrintBold("Done rendering ~ %v files!")+" (%v)\n", totalFiles, timeElapsed)
 }
 
 func errorExit(code int, format string, a ...any) {
