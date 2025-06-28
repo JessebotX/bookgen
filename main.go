@@ -10,8 +10,9 @@ import (
 const Version = "0.1"
 
 var (
-	EnablePlainOutput = false
-	ProgramName       = "bookgen"
+	SuppressNonEssentialOutput = false
+	EnablePlainOutput          = false
+	ProgramName                = "bookgen"
 )
 
 func main() {
@@ -22,7 +23,8 @@ func main() {
 	ProgramName = os.Args[0]
 
 	var workingDirFlag, outputDirFlag string
-	setWorkingDirFlag, setOutputDirFlag, setPlainFlag := false, false, false
+	setWorkingDirFlag := false
+	setOutputDirFlag := false
 
 	// cli arguments are optional
 	if len(os.Args) >= 2 {
@@ -32,19 +34,9 @@ func main() {
 			if arg == "--" {
 				break
 			} else if arg == "--plain" {
-				if (i + 1) < len(os.Args) {
-					val := os.Args[i+1]
-					if val == "none" {
-						EnablePlainOutput = false
-						setPlainFlag = true
-						i++
-					}
-				}
-
-				if !setPlainFlag {
-					EnablePlainOutput = true
-				}
-				setPlainFlag = true
+				EnablePlainOutput = true
+			} else if arg == "-q" || arg == "--suppress-non-essential-output" {
+				SuppressNonEssentialOutput = true
 			} else if arg == "-i" || arg == "--input-directory" {
 				// Flag requires arg
 				if (i + 1) >= len(os.Args) {
@@ -100,17 +92,19 @@ func main() {
 		errorExit(1, err.Error())
 	}
 
-	totalFiles := 0
-	for _, b := range collection.Books {
-		for _ = range b.Chapters {
-			totalFiles++
-		}
-		totalFiles++
-	}
+	// totalFiles := 0
+	// for _, b := range collection.Books {
+	// 	for _ = range b.Chapters {
+	// 		totalFiles++
+	// 	}
+	// 	totalFiles++
+	// }
 
 	timeElapsed := time.Since(timeStart)
 
-	fmt.Printf(terminalPrintBold("Done rendering ~ %v files!")+" (%v)\n", totalFiles, timeElapsed)
+	if !SuppressNonEssentialOutput {
+		fmt.Printf(terminalPrintBold("Done")+" (%v)\n", timeElapsed)
+	}
 }
 
 func errorExit(code int, format string, a ...any) {
