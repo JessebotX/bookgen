@@ -9,7 +9,6 @@ import (
 
 func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) error {
 	layoutsDir := filepath.Join(workingDir, "layouts")
-	//baseTemplatePath := filepath.Join(layoutsDir, "_base.html")
 	collectionTemplatePath := filepath.Join(layoutsDir, "index.html")
 	bookTemplatePath := filepath.Join(layoutsDir, "_book.html")
 	chapterTemplatePath := filepath.Join(layoutsDir, "_chapter.html")
@@ -26,14 +25,6 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 	if err == nil {
 		templateFileNames = append(templateFileNames, fileNames...)
 	}
-
-	// currentParsing := []string{collectionTemplatePath}
-
-	// if _, err := os.Stat(baseTemplatePath); err == nil {
-	// 	currentParsing = append(currentParsing, baseTemplatePath)
-	// } else if err != nil && !errors.Is(err, os.ErrNotExist) {
-	// 	return fmt.Errorf("failed to stat base template `%v`. %w", baseTemplatePath, err)
-	// }
 
 	templateFileNames[0] = collectionTemplatePath
 	collectionTemplate, err := template.ParseFiles(templateFileNames...)
@@ -70,7 +61,6 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 	}
 
 	for _, book := range c.Books {
-		// bookWorkingDir := filepath.Join(workingDir, "books", book.PageName)
 		bookOutputDir := filepath.Join(outputDir, book.PageName)
 		if err := os.MkdirAll(bookOutputDir, os.ModeDir); err != nil {
 			return fmt.Errorf("failed to create book `%v` directory. %w", book.PageName, err)
