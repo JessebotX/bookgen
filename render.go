@@ -22,7 +22,7 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 	// Read templates
 	// ---
 	templateFileNames := []string{collectionTemplatePath}
-	fileNames, err := filepath.Glob("_*_t.html")
+	fileNames, err := filepath.Glob(filepath.Join(layoutsDir, "_*_t.html"))
 	if err == nil {
 		templateFileNames = append(templateFileNames, fileNames...)
 	}
