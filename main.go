@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"time"
 )
@@ -11,12 +12,12 @@ import (
 type FlagType int
 
 const (
-	Version             = "0.1"
 	FlagString FlagType = iota
 	FlagBool
 )
 
 var (
+	Version                    = "undefined"
 	SuppressNonEssentialOutput = false
 	EnablePlainOutput          = false
 	ProgramName                = "bookgen"
@@ -42,14 +43,14 @@ func main() {
 		Name:        "input-directory",
 		Type:        FlagString,
 		ShortName:   "i",
-		Description: "The working/input directory.",
+		Description: "The working/input directory that contains a bookgen.yml file.",
 		Value:       "./",
 	}
 	outputDirFlag := Flag{
 		Name:        "output-directory",
 		Type:        FlagString,
 		ShortName:   "o",
-		Description: "The output directory.",
+		Description: "The output directory where the distributable contents will be generated in.",
 		Value:       "./out",
 	}
 	plainOutputFlag := Flag{
@@ -124,7 +125,18 @@ func flagParse(flags []*Flag) ([]string, error) {
 	for i := 1; i < len(os.Args); i++ {
 		arg := os.Args[i]
 
+		if arg == "--help" || arg == "-h" || arg == "-?" {
+			printHelp(flags)
+
+			os.Exit(0)
+		}
+
 		// TODO: support help and version flags here.
+		if arg == "--version" || arg == "-v" || arg == "-V" {
+			fmt.Printf("%v version %v %v/%v\n", ProgramName, Version, runtime.GOOS, runtime.GOARCH)
+
+			os.Exit(0)
+		}
 
 		for _, f := range flags {
 			if arg == "--"+f.Name || (f.ShortName != "" && arg == "-"+f.ShortName) {
@@ -151,6 +163,63 @@ func flagParse(flags []*Flag) ([]string, error) {
 	}
 
 	return positionalArgs, nil
+}
+
+func printHelp(flags []*Flag) {
+	indentSize := 4
+	fmt.Println("USAGE")
+
+	for range indentSize {
+		fmt.Printf(" ")
+	}
+
+	fmt.Printf("%v [FLAGS...] [/path/to/input-directory]\n\n", ProgramName)
+	fmt.Println("FLAGS")
+
+	// Help flag
+	for range indentSize {
+		fmt.Printf(" ")
+	}
+	fmt.Println("-h, -?, --help")
+	for range indentSize * 3 {
+		fmt.Printf(" ")
+	}
+	fmt.Println("Get help information on how to use this program.")
+
+	// Version flag
+	for range indentSize {
+		fmt.Printf(" ")
+	}
+	fmt.Println("-v, -V, --version")
+	for range indentSize * 3 {
+		fmt.Printf(" ")
+	}
+	fmt.Println("Get program version.")
+
+	// Other defined flags
+	for _, f := range flags {
+		for range indentSize {
+			fmt.Printf(" ")
+		}
+
+		if f.ShortName != "" {
+			fmt.Printf("-%v, --%v", f.ShortName, f.Name)
+		} else {
+			fmt.Printf("    --%v", f.Name)
+		}
+
+		if f.Type == FlagString {
+			fmt.Printf(" <string>")
+		}
+
+		fmt.Printf("\n")
+
+		for range indentSize * 3 {
+			fmt.Printf(" ")
+		}
+
+		fmt.Printf("%v (default: %v)\n", f.Description, f.Value)
+	}
 }
 
 func errorExit(code int, format string, a ...any) {
