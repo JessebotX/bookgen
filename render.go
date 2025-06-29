@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 )
 
 func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) error {
@@ -15,6 +17,19 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 
 	if err := os.MkdirAll(outputDir, os.ModeDir); err != nil {
 		return fmt.Errorf("failed to create output directory. %w", err)
+	}
+
+	// ---
+	// Copy global static items into output
+	// ---
+	if err := copyStaticFilesToDir(layoutsDir, outputDir, layoutsDir, []string{
+		"index.html",
+		"_book.html",
+		"_chapter.html",
+	}, []string{
+		"_*_t.html",
+	}); err != nil {
+		return fmt.Errorf("failed to copy files to output. %w", err)
 	}
 
 	// ---
@@ -60,7 +75,13 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 		return fmt.Errorf("failed to close collection index file. %w", err)
 	}
 
+	// ---
+	// Book index & chapters
+	// ---
+
+	// TODO: epub generation
 	for _, book := range c.Books {
+		bookWorkingDir := filepath.Join(workingDir, "books", book.PageName)
 		bookOutputDir := filepath.Join(outputDir, book.PageName)
 		if err := os.MkdirAll(bookOutputDir, os.ModeDir); err != nil {
 			return fmt.Errorf("failed to create book `%v` directory. %w", book.PageName, err)
@@ -80,6 +101,19 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 			return fmt.Errorf("failed to write book `%v` chapter file. %w", book.PageName, err)
 		}
 
+		// Add cover image to output
+		if strings.TrimSpace(book.CoverImageName) != "" {
+			coverPathOld := filepath.Join(bookWorkingDir, book.CoverImageName)
+			coverPathNew := filepath.Join(bookOutputDir, book.CoverImageName)
+
+			if err := os.RemoveAll(coverPathNew); err != nil {
+				return fmt.Errorf("failed to remove cover path in output directory `%v`. %w", err)
+			}
+
+			if err := os.Link(coverPathOld, coverPathNew); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -94,6 +128,54 @@ func renderBookChapters(chapters []Chapter, chapterTemplate *template.Template, 
 		defer fChapter.Close()
 
 		if err := chapterTemplate.ExecuteTemplate(fChapter, "_chapter.html", chapter); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func copyStaticFilesToDir(currDir, newDir, rootDir string, relExcludes, relExcludesPatterns []string) error {
+	items, err := os.ReadDir(currDir)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		oldPath := filepath.Join(currDir, item.Name())
+		oldPathFromRoot := strings.TrimLeft(strings.TrimPrefix(oldPath, rootDir), "/\\")
+		newPath := filepath.Join(newDir, oldPathFromRoot)
+
+		// Check against exclusions
+		if slices.Contains(relExcludes, oldPathFromRoot) {
+			continue
+		}
+
+		matching := false
+		for _, pattern := range relExcludesPatterns {
+			matching, err = filepath.Match(pattern, oldPathFromRoot)
+			if err != nil {
+				return err
+			}
+		}
+		if matching {
+			continue
+		}
+
+		if item.IsDir() {
+			if err := os.MkdirAll(newPath, os.ModeDir); err != nil {
+				return err
+			}
+
+			return copyStaticFilesToDir(oldPath, newDir, rootDir, relExcludes, relExcludesPatterns)
+		}
+
+		// Copy item from old to new path (re-copy if already exists
+		if err := os.RemoveAll(newPath); err != nil {
+			return err
+		}
+
+		if err := os.Link(oldPath, newPath); err != nil {
 			return err
 		}
 	}
