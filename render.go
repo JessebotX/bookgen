@@ -9,13 +9,17 @@ import (
 	"strings"
 )
 
+const (
+	DirPerms = 0755
+)
+
 func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) error {
 	layoutsDir := filepath.Join(workingDir, "layouts")
 	collectionTemplatePath := filepath.Join(layoutsDir, "index.html")
 	bookTemplatePath := filepath.Join(layoutsDir, "_book.html")
 	chapterTemplatePath := filepath.Join(layoutsDir, "_chapter.html")
 
-	if err := os.MkdirAll(outputDir, os.ModeDir); err != nil {
+	if err := os.MkdirAll(outputDir, DirPerms); err != nil {
 		return fmt.Errorf("failed to create output directory. %w", err)
 	}
 
@@ -83,7 +87,7 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 	for _, book := range c.Books {
 		bookWorkingDir := filepath.Join(workingDir, "books", book.PageName)
 		bookOutputDir := filepath.Join(outputDir, book.PageName)
-		if err := os.MkdirAll(bookOutputDir, os.ModeDir); err != nil {
+		if err := os.MkdirAll(bookOutputDir, DirPerms); err != nil {
 			return fmt.Errorf("failed to create book `%v` directory. %w", book.PageName, err)
 		}
 
@@ -163,7 +167,7 @@ func copyStaticFilesToDir(currDir, newDir, rootDir string, relExcludes, relExclu
 		}
 
 		if item.IsDir() {
-			if err := os.MkdirAll(newPath, os.ModeDir); err != nil {
+			if err := os.MkdirAll(newPath, DirPerms); err != nil {
 				return err
 			}
 
