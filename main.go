@@ -124,6 +124,8 @@ func flagParse(flags []*Flag) ([]string, error) {
 	for i := 1; i < len(os.Args); i++ {
 		arg := os.Args[i]
 
+		// TODO: support help and version flags here.
+
 		for _, f := range flags {
 			if arg == "--"+f.Name || (f.ShortName != "" && arg == "-"+f.ShortName) {
 				if f.Type == FlagString {
