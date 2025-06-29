@@ -31,39 +31,6 @@ type Flag struct {
 	IsSet       bool
 }
 
-func flagParse(flags []*Flag) ([]string, error) {
-	positionalArgs := make([]string, 0)
-
-	for i := 1; i < len(os.Args); i++ {
-		arg := os.Args[i]
-
-		for _, f := range flags {
-			if arg == "--"+f.Name || (f.ShortName != "" && arg == "-"+f.ShortName) {
-				if f.Type == FlagString {
-					if (i + 1) >= len(os.Args) {
-						return positionalArgs, fmt.Errorf("missing value for `%v`. See `%v --help for more information`", arg, ProgramName)
-					}
-
-					f.IsSet = true
-					f.Value = os.Args[i+1]
-					i++
-					break
-				}
-
-				if f.Type == FlagBool {
-					f.IsSet = true
-					f.Value = "true"
-					break
-				}
-			}
-
-			positionalArgs = append(positionalArgs, arg)
-		}
-	}
-
-	return positionalArgs, nil
-}
-
 func main() {
 	// ---
 	// Read CLI arguments
@@ -144,6 +111,39 @@ func main() {
 	if !SuppressNonEssentialOutput {
 		fmt.Printf(terminalPrintBold("Done")+" (%v)\n", timeElapsed)
 	}
+}
+
+func flagParse(flags []*Flag) ([]string, error) {
+	positionalArgs := make([]string, 0)
+
+	for i := 1; i < len(os.Args); i++ {
+		arg := os.Args[i]
+
+		for _, f := range flags {
+			if arg == "--"+f.Name || (f.ShortName != "" && arg == "-"+f.ShortName) {
+				if f.Type == FlagString {
+					if (i + 1) >= len(os.Args) {
+						return positionalArgs, fmt.Errorf("missing value for `%v`. See `%v --help for more information`", arg, ProgramName)
+					}
+
+					f.IsSet = true
+					f.Value = os.Args[i+1]
+					i++
+					break
+				}
+
+				if f.Type == FlagBool {
+					f.IsSet = true
+					f.Value = "true"
+					break
+				}
+			}
+
+			positionalArgs = append(positionalArgs, arg)
+		}
+	}
+
+	return positionalArgs, nil
 }
 
 func errorExit(code int, format string, a ...any) {
