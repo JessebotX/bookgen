@@ -15,6 +15,41 @@ var (
 	ProgramName                = "bookgen"
 )
 
+type Flag struct {
+	Name        string
+	Type        string
+	ShortName   string
+	Description string
+	Value       string
+	IsSet       bool
+}
+
+func flagParse(flags []*Flag) ([]string, error) {
+	positionalArguments := make([]string, 0)
+	for i := 1; i < len(os.Args); i++ {
+		arg := os.Args[i]
+
+		for _, f := range flags {
+			if arg == "--"+f.Name || arg == "-"+f.ShortName {
+				if f.Type == "string" {
+					if (i + 1) >= len(os.Args) {
+						return positionalArguments, fmt.Errorf("missing value for `%v`. See `%v --help for more information`", arg, ProgramName)
+					}
+
+					f.IsSet = true
+					f.Value = os.Args[i+1]
+					i++
+					break
+				}
+			}
+
+			positionalArguments = append(positionalArguments, arg)
+		}
+	}
+
+	return positionalArguments, nil
+}
+
 func main() {
 	// ---
 	// Read CLI arguments
@@ -22,59 +57,37 @@ func main() {
 	// Home-made cli argument parsing
 	ProgramName = os.Args[0]
 
-	var workingDirFlag, outputDirFlag string
-	setWorkingDirFlag := false
-	setOutputDirFlag := false
-
-	// cli arguments are optional
-	if len(os.Args) >= 2 {
-		for i := 1; i < len(os.Args); i++ {
-			arg := os.Args[i]
-
-			if arg == "--" {
-				break
-			} else if arg == "--plain" {
-				EnablePlainOutput = true
-			} else if arg == "-q" || arg == "--suppress-non-essential-output" {
-				SuppressNonEssentialOutput = true
-			} else if arg == "-i" || arg == "--input-directory" {
-				// Flag requires arg
-				if (i + 1) >= len(os.Args) {
-					errorExit(1, "missing value for flag `%v`. See `%v` --help` for more info.", arg, ProgramName)
-				}
-
-				workingDirFlag = os.Args[i+1]
-				setWorkingDirFlag = true
-				i++ // next arg is not a flag
-			} else if arg == "-o" || arg == "--output-directory" {
-				// Flag requires arg
-				if (i + 1) >= len(os.Args) {
-					errorExit(1, "missing value for flag `%v`. See `%v --help` for more info.", arg, ProgramName)
-				}
-
-				outputDirFlag = os.Args[i+1]
-				setOutputDirFlag = true
-				i++ // next arg is not a flag
-			} else {
-				errorExit(1, "unknown flag `%v`. See `%v --help` for more info.", arg, ProgramName)
-			}
-		}
+	inputDirFlag := Flag{
+		Name:        "input-directory",
+		Type:        "string",
+		ShortName:   "i",
+		Description: "The working/input directory.",
+		Value:       "./",
+	}
+	outputDirFlag := Flag{
+		Name:        "output-directory",
+		Type:        "string",
+		ShortName:   "o",
+		Description: "The output directory.",
+		Value:       "./out",
 	}
 
-	// set default values for flags
-	if !setWorkingDirFlag {
-		workingDirFlag = "./"
+	flags := []*Flag{&inputDirFlag, &outputDirFlag}
+	if _, err := flagParse(flags); err != nil {
+		errorExit(1, err.Error())
 	}
 
 	// make default output dir generate relative to working dir if
 	// output dir is not provided
-	if !setOutputDirFlag {
-		outputDirFlag = filepath.Join(workingDirFlag, "out")
+	if !outputDirFlag.IsSet {
+		outputDirFlag.Value = filepath.Join(inputDirFlag.Value, "out")
 	}
 
-	// output dir cannot be == working dir
-	if filepath.Clean(outputDirFlag) == filepath.Clean(workingDirFlag) {
-		errorExit(1, "output directory cannot be equal to the working/input directory (`%s` and `%s` reference the same path).", workingDirFlag, outputDirFlag)
+	fmt.Println(inputDirFlag.Value, outputDirFlag.Value)
+
+	// output dir cannot be == input dir
+	if filepath.Clean(inputDirFlag.Value) == filepath.Clean(outputDirFlag.Value) {
+		errorExit(1, "output directory cannot be equal to the working/input directory (`%s` and `%s` reference the same path).", inputDirFlag.Value, outputDirFlag.Value)
 	}
 
 	// ---
@@ -83,22 +96,14 @@ func main() {
 
 	timeStart := time.Now()
 
-	collection, err := DecodeCollection(workingDirFlag)
+	collection, err := DecodeCollection(inputDirFlag.Value)
 	if err != nil {
 		errorExit(1, err.Error())
 	}
 
-	if err := RenderCollectionToWebsite(&collection, workingDirFlag, outputDirFlag); err != nil {
+	if err := RenderCollectionToWebsite(&collection, inputDirFlag.Value, outputDirFlag.Value); err != nil {
 		errorExit(1, err.Error())
 	}
-
-	// totalFiles := 0
-	// for _, b := range collection.Books {
-	// 	for _ = range b.Chapters {
-	// 		totalFiles++
-	// 	}
-	// 	totalFiles++
-	// }
 
 	timeElapsed := time.Since(timeStart)
 
