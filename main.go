@@ -4,10 +4,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
-const Version = "0.1"
+type FlagType int
+
+const (
+	Version             = "0.1"
+	FlagString FlagType = iota
+	FlagBool
+)
 
 var (
 	SuppressNonEssentialOutput = false
@@ -17,7 +24,7 @@ var (
 
 type Flag struct {
 	Name        string
-	Type        string
+	Type        FlagType
 	ShortName   string
 	Description string
 	Value       string
@@ -25,15 +32,16 @@ type Flag struct {
 }
 
 func flagParse(flags []*Flag) ([]string, error) {
-	positionalArguments := make([]string, 0)
+	positionalArgs := make([]string, 0)
+
 	for i := 1; i < len(os.Args); i++ {
 		arg := os.Args[i]
 
 		for _, f := range flags {
-			if arg == "--"+f.Name || arg == "-"+f.ShortName {
-				if f.Type == "string" {
+			if arg == "--"+f.Name || (f.ShortName != "" && arg == "-"+f.ShortName) {
+				if f.Type == FlagString {
 					if (i + 1) >= len(os.Args) {
-						return positionalArguments, fmt.Errorf("missing value for `%v`. See `%v --help for more information`", arg, ProgramName)
+						return positionalArgs, fmt.Errorf("missing value for `%v`. See `%v --help for more information`", arg, ProgramName)
 					}
 
 					f.IsSet = true
@@ -41,13 +49,19 @@ func flagParse(flags []*Flag) ([]string, error) {
 					i++
 					break
 				}
+
+				if f.Type == FlagBool {
+					f.IsSet = true
+					f.Value = "true"
+					break
+				}
 			}
 
-			positionalArguments = append(positionalArguments, arg)
+			positionalArgs = append(positionalArgs, arg)
 		}
 	}
 
-	return positionalArguments, nil
+	return positionalArgs, nil
 }
 
 func main() {
@@ -59,31 +73,51 @@ func main() {
 
 	inputDirFlag := Flag{
 		Name:        "input-directory",
-		Type:        "string",
+		Type:        FlagString,
 		ShortName:   "i",
 		Description: "The working/input directory.",
 		Value:       "./",
 	}
 	outputDirFlag := Flag{
 		Name:        "output-directory",
-		Type:        "string",
+		Type:        FlagString,
 		ShortName:   "o",
 		Description: "The output directory.",
 		Value:       "./out",
 	}
+	plainOutputFlag := Flag{
+		Name:        "plain",
+		Type:        FlagBool,
+		ShortName:   "",
+		Description: "Strip text styling/terminal escape codes from terminal output.",
+		Value:       "false",
+	}
+	suppressNonEssentialOutputFlag := Flag{
+		Name:        "suppress-non-essential-output",
+		Type:        FlagBool,
+		ShortName:   "q",
+		Description: "Suppress non-essential terminal output.",
+		Value:       "false",
+	}
 
-	flags := []*Flag{&inputDirFlag, &outputDirFlag}
+	flags := []*Flag{
+		&inputDirFlag,
+		&outputDirFlag,
+		&plainOutputFlag,
+		&suppressNonEssentialOutputFlag,
+	}
 	if _, err := flagParse(flags); err != nil {
 		errorExit(1, err.Error())
 	}
+
+	EnablePlainOutput, _ = strconv.ParseBool(plainOutputFlag.Value)
+	SuppressNonEssentialOutput, _ = strconv.ParseBool(suppressNonEssentialOutputFlag.Value)
 
 	// make default output dir generate relative to working dir if
 	// output dir is not provided
 	if !outputDirFlag.IsSet {
 		outputDirFlag.Value = filepath.Join(inputDirFlag.Value, "out")
 	}
-
-	fmt.Println(inputDirFlag.Value, outputDirFlag.Value)
 
 	// output dir cannot be == input dir
 	if filepath.Clean(inputDirFlag.Value) == filepath.Clean(outputDirFlag.Value) {
