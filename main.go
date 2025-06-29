@@ -73,8 +73,13 @@ func main() {
 		&plainOutputFlag,
 		&suppressNonEssentialOutputFlag,
 	}
-	if _, err := flagParse(flags); err != nil {
+	positionalArgs, err := flagParse(flags)
+	if err != nil {
 		errorExit(1, err.Error())
+	}
+
+	if len(positionalArgs) > 0 && !inputDirFlag.IsSet {
+		inputDirFlag.Value = positionalArgs[0]
 	}
 
 	EnablePlainOutput, _ = strconv.ParseBool(plainOutputFlag.Value)
