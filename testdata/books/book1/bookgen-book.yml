@@ -4,6 +4,7 @@ titleSort: "Book 1; or, The Book"
 authorsSort: "Doe, John & Doe, Jane"
 status: "Completed"
 published: "2025-05-16 2:05-07:00"
+coverImageName: ./cover-test.webp
 #published: "2025-06-25 16:27:45.789Z"
 #published: "2025-06-25 16:27:45.789Z"
 #published: "2025-06-25 16:27:45.789Z"
