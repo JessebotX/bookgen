@@ -68,13 +68,12 @@ func main() {
 		Value:       "false",
 	}
 
-	flags := []*Flag{
+	positionalArgs, err := flagParse([]*Flag{
 		&inputDirFlag,
 		&outputDirFlag,
 		&plainOutputFlag,
 		&suppressNonEssentialOutputFlag,
-	}
-	positionalArgs, err := flagParse(flags)
+	})
 	if err != nil {
 		errorExit(1, err.Error())
 	}
