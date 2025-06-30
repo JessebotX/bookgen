@@ -13,9 +13,10 @@ import (
 	"time"
 
 	mapstructure "github.com/go-viper/mapstructure/v2"
+
 	yaml "github.com/goccy/go-yaml"
+
 	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
@@ -24,7 +25,7 @@ import (
 var (
 	MarkdownToHTML = goldmark.New(
 		goldmark.WithExtensions(
-			meta.Meta,
+			Meta,
 			extension.GFM,
 			extension.Footnote,
 			extension.Typographer,
@@ -342,7 +343,7 @@ func convertMarkdownToHTML(content []byte, useXHTML bool) (template.HTML, map[st
 		return template.HTML(""), nil, err
 	}
 
-	metadata := meta.Get(context)
+	metadata := Get(context)
 
 	return template.HTML(buffer.String()), metadata, nil
 }
