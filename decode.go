@@ -8,19 +8,17 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
-	"reflect"
 	"slices"
 	"strings"
 	"time"
 
+	mapstructure "github.com/go-viper/mapstructure/v2"
 	yaml "github.com/goccy/go-yaml"
-
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
-
-	"github.com/yuin/goldmark-meta"
 )
 
 var (
@@ -75,7 +73,7 @@ func DecodeCollection(workingDir string) (Collection, error) {
 		return c, fmt.Errorf("collection: failed to decode YAML in `%v`. %w", pathConfig, err)
 	}
 
-	if err := mapToStruct(&c, c.Params); err != nil {
+	if err := mapstructure.Decode(c.Params, &c); err != nil {
 		return c, fmt.Errorf("collection: failed to decode YAML in `%v`. %w", pathConfig, err)
 	}
 
@@ -140,7 +138,7 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 		return b, fmt.Errorf("book `%v`: failed to decode YAML in `%v`. %w", b.PageName, pathConfig, err)
 	}
 
-	if err := mapToStruct(&b, b.Params); err != nil {
+	if err := mapstructure.Decode(b.Params, &b); err != nil {
 		return b, fmt.Errorf("book `%v`: failed to decode YAML in `%v`. %w", b.PageName, pathConfig, err)
 	}
 
@@ -261,7 +259,7 @@ func DecodeChapter(path string, parent *Book) (Chapter, error) {
 	c.Content.HTML = contentHTML
 
 	c.Params = metadata
-	if err := mapToStruct(&c, c.Params); err != nil {
+	if err := mapstructure.Decode(c.Params, &c); err != nil {
 		return c, fmt.Errorf("chapter `%v`: failed to decode metadata in chapter. %w", chapterSlug, err)
 	}
 
@@ -347,50 +345,4 @@ func convertMarkdownToHTML(content []byte, useXHTML bool) (template.HTML, map[st
 	metadata := meta.Get(context)
 
 	return template.HTML(buffer.String()), metadata, nil
-}
-
-// Decode a map m into struct s. Field/Key names are supposed to be
-// case sensitive. Credit: <https://stackoverflow.com/a/26746461>
-func mapToStruct(s any, m map[string]any) error {
-	for fieldName, unparsedValue := range m {
-		reflectField := reflect.ValueOf(s).Elem()
-		reflectFieldValue := reflectField.FieldByNameFunc(func(n string) bool {
-			return strings.EqualFold(n, fieldName)
-		})
-
-		// ignore keys that don't exist
-		if !reflectFieldValue.IsValid() {
-			continue
-		}
-
-		if !reflectFieldValue.CanSet() {
-			return fmt.Errorf("value of field `%s` cannot be changed.", fieldName)
-		}
-
-		fieldType := reflectFieldValue.Type()
-		fieldValue := reflect.ValueOf(unparsedValue)
-		if fieldType == reflect.TypeOf(Internal{}) {
-			internalSettings := Internal{
-				GenerateEPUB: true,
-			}
-
-			if _, ok := unparsedValue.(map[string]any); !ok {
-				return fmt.Errorf("internal settings format invalid. Ensure it is in the form of a map of key/value pairs.")
-			}
-
-			if err := mapToStruct(&internalSettings, unparsedValue.(map[string]any)); err != nil {
-				return err
-			}
-			fieldValue = reflect.ValueOf(internalSettings)
-		}
-
-		if fieldType != fieldValue.Type() {
-			return fmt.Errorf(
-				"mismatch types: value `%v` (%v) must have the same type as field `%v` (%v).",
-				fieldValue, fieldValue.Type(), fieldName, fieldType)
-		}
-
-		reflectFieldValue.Set(fieldValue)
-	}
-	return nil
 }
