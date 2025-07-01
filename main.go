@@ -133,6 +133,10 @@ func flagParse(flags []*Flag) ([]string, error) {
 	for i := 1; i < len(os.Args); i++ {
 		arg := os.Args[i]
 
+		if arg == "--" {
+			break
+		}
+
 		if arg == "--help" || arg == "-h" || arg == "-?" {
 			printHelp(flags)
 
@@ -146,6 +150,7 @@ func flagParse(flags []*Flag) ([]string, error) {
 			os.Exit(0)
 		}
 
+		flagSet := false
 		for _, f := range flags {
 			if arg == "--"+f.Name || (f.ShortName != "" && arg == "-"+f.ShortName) {
 				if f.Type == FlagString {
@@ -154,6 +159,7 @@ func flagParse(flags []*Flag) ([]string, error) {
 					}
 
 					f.IsSet = true
+					flagSet = true
 					f.Value = os.Args[i+1]
 					i++
 					break
@@ -161,11 +167,14 @@ func flagParse(flags []*Flag) ([]string, error) {
 
 				if f.Type == FlagBool {
 					f.IsSet = true
+					flagSet = true
 					f.Value = "true"
 					break
 				}
 			}
+		}
 
+		if !flagSet {
 			positionalArgs = append(positionalArgs, arg)
 		}
 	}
