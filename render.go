@@ -113,7 +113,8 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string, enab
 			return fmt.Errorf("failed to create book `%v` directory. %w", book.PageName, err)
 		}
 
-		outBook, err := os.Create(filepath.Join(bookOutputDir, "index.html"))
+		bookOutputPath := filepath.Join(bookOutputDir, "index.html")
+		outBook, err := os.Create(bookOutputPath)
 		if err != nil {
 			return fmt.Errorf("failed to create book `%v` index file. %w", book.PageName, err)
 		}
@@ -124,7 +125,7 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string, enab
 		}
 
 		if enableMinify {
-			if err := minifyFileHTML(bookTemplatePath, outBook, minifier); err != nil {
+			if err := minifyFileHTML(bookOutputPath, outBook, minifier); err != nil {
 				return fmt.Errorf("failed to minify book `%v` index output file. %w", book.PageName, err)
 			}
 		}
@@ -153,7 +154,9 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string, enab
 
 func renderBookChapters(chapters []Chapter, chapterTemplate *template.Template, chapterTemplatePath, bookOutputDir string, minifier *minify.M, enableMinify bool) error {
 	for _, chapter := range chapters {
-		fChapter, err := os.Create(filepath.Join(bookOutputDir, chapter.PageName+".html"))
+		chapterOutputPath := filepath.Join(bookOutputDir, chapter.PageName+".html")
+
+		fChapter, err := os.Create(chapterOutputPath)
 		if err != nil {
 			return err
 		}
@@ -164,7 +167,7 @@ func renderBookChapters(chapters []Chapter, chapterTemplate *template.Template, 
 		}
 
 		if enableMinify {
-			if err := minifyFileHTML(chapterTemplatePath, fChapter, minifier); err != nil {
+			if err := minifyFileHTML(chapterOutputPath, fChapter, minifier); err != nil {
 				return fmt.Errorf("failed to minify book `%v` chapter `%v` index output file. %w", chapter.Parent.PageName, chapter.PageName, err)
 			}
 		}
