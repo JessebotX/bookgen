@@ -41,8 +41,9 @@ type Series struct {
 	Number float32
 }
 
-// SocialLink represents a link that directs the user to social
-// media/contact/donation pages associated with the author.
+// SocialLink represents usually represents a link that directs the
+// user to another website/social media/contact/donation pages
+// associated with the author and/or the written work itself.
 type SocialLink struct {
 	Name        string
 	Address     string
@@ -64,9 +65,7 @@ type Collection struct {
 
 func (c *Collection) InitializeDefaults() {
 	c.Title = "My Writing"
-	c.Description = "Collection of my written works."
 	c.ConfigFormatVersion = 0
-	c.LanguageCode = "en"
 	c.Internal.GenerateEPUB = true
 }
 
@@ -116,6 +115,7 @@ type Book struct {
 	FaviconImageName string
 	Status           string
 	LanguageCode     string
+	Mirrors          []SocialLink
 	DatePublished    time.Time
 	DateModified     time.Time
 	Content          Content
@@ -129,7 +129,6 @@ func (b *Book) InitializeDefaults(workingDir string, parent *Collection) {
 	b.IsStub = false
 	b.Status = "completed"
 	b.Internal.GenerateEPUB = true
-	b.LanguageCode = "en"
 
 	if parent != nil {
 		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB
@@ -201,7 +200,6 @@ func (c *Chapter) InitializeDefaults(workingDir string, parent *Book) {
 	c.Parent = parent
 	c.PageName = filepath.Base(workingDir)
 	c.Order = 1
-	c.LanguageCode = "en"
 
 	if parent != nil {
 		if strings.TrimSpace(parent.LanguageCode) != "" {
