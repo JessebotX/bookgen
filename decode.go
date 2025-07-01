@@ -239,36 +239,34 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 // Decode file path with .md extension into a Chapter.
 func DecodeChapter(path string, parent *Book) (Chapter, error) {
 	if filepath.Ext(path) != ".md" {
-		return Chapter{}, fmt.Errorf("chapter `%v`: missing `.md` (markdown) file extension", path)
-	}
-
-	chapterSlug := strings.TrimSuffix(filepath.Base(path), ".md")
-
-	rawMarkdown, err := os.ReadFile(path)
-	if err != nil {
-		return Chapter{}, fmt.Errorf("chapter `%v`: failed to read file at `%v`. %w", chapterSlug, path, err)
+		return Chapter{}, fmt.Errorf("chapter %v: missing `.md` (markdown) file extension", filepath.Base(path), path)
 	}
 
 	var c Chapter
 	c.InitializeDefaults(path, parent)
 
+	rawMarkdown, err := os.ReadFile(path)
+	if err != nil {
+		return Chapter{}, fmt.Errorf("chapter `%v`: failed to read file at `%v`. %w", c.PageName, path, err)
+	}
+
 	c.Content.Raw = string(rawMarkdown)
 	contentHTML, metadata, err := convertMarkdownToHTML(rawMarkdown, false)
 	if err != nil {
-		return c, fmt.Errorf("chapter `%v`: failed to convert markdown to HTML. %w", chapterSlug, err)
+		return c, fmt.Errorf("chapter `%v`: failed to convert markdown to HTML. %w", c.PageName, err)
 	}
 	c.Content.HTML = contentHTML
 
 	c.Params = metadata
 	if err := mapstructure.Decode(c.Params, &c); err != nil {
-		return c, fmt.Errorf("chapter `%v`: failed to decode metadata in chapter. %w", chapterSlug, err)
+		return c, fmt.Errorf("chapter `%v`: failed to decode metadata in chapter. %w", c.PageName, err)
 	}
 
 	datePubParam, ok := c.Params["published"]
 	if ok && c.DatePublished.IsZero() {
 		c.DatePublished, err = getTimeFromParam(datePubParam)
 		if err != nil {
-			return c, fmt.Errorf("chapter `%v`: failed to parse date published: %w", chapterSlug, err)
+			return c, fmt.Errorf("chapter `%v`: failed to parse date published: %w", c.PageName, err)
 		}
 	}
 
@@ -276,7 +274,7 @@ func DecodeChapter(path string, parent *Book) (Chapter, error) {
 	if ok && c.DateModified.IsZero() {
 		c.DateModified, err = getTimeFromParam(dateModParam)
 		if err != nil {
-			return c, fmt.Errorf("chapter `%v`: failed to parse date modified: %w", chapterSlug, err)
+			return c, fmt.Errorf("chapter `%v`: failed to parse date modified: %w", c.PageName, err)
 		}
 	}
 

@@ -198,7 +198,7 @@ type Chapter struct {
 
 func (c *Chapter) InitializeDefaults(workingDir string, parent *Book) {
 	c.Parent = parent
-	c.PageName = filepath.Base(workingDir)
+	c.PageName = strings.TrimSuffix(filepath.Base(workingDir), ".md")
 	c.Order = 1
 
 	if parent != nil {
