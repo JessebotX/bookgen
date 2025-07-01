@@ -67,12 +67,20 @@ func main() {
 		Description: "Suppress non-essential terminal output.",
 		Value:       "false",
 	}
+	minifyFlag := Flag{
+		Name:        "minify",
+		Type:        FlagBool,
+		ShortName:   "",
+		Description: "Minify output files.",
+		Value:       "false",
+	}
 
 	positionalArgs, err := flagParse([]*Flag{
 		&inputDirFlag,
 		&outputDirFlag,
 		&plainOutputFlag,
 		&suppressNonEssentialOutputFlag,
+		&minifyFlag,
 	})
 	if err != nil {
 		errorExit(1, err.Error())
@@ -84,6 +92,7 @@ func main() {
 
 	EnablePlainOutput, _ = strconv.ParseBool(plainOutputFlag.Value)
 	SuppressNonEssentialOutput, _ = strconv.ParseBool(suppressNonEssentialOutputFlag.Value)
+	enableMinify, _ := strconv.ParseBool(minifyFlag.Value)
 
 	// make default output dir generate relative to working dir if
 	// output dir is not provided
@@ -107,7 +116,7 @@ func main() {
 		errorExit(1, err.Error())
 	}
 
-	if err := RenderCollectionToWebsite(&collection, inputDirFlag.Value, outputDirFlag.Value); err != nil {
+	if err := RenderCollectionToWebsite(&collection, inputDirFlag.Value, outputDirFlag.Value, enableMinify); err != nil {
 		errorExit(1, err.Error())
 	}
 

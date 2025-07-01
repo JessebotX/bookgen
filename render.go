@@ -7,17 +7,30 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/minify/v2/css"
+	"github.com/tdewolff/minify/v2/html"
 )
 
 const (
 	DirPerms = 0755
 )
 
-func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) error {
+func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string, enableMinify bool) error {
 	layoutsDir := filepath.Join(workingDir, "layouts")
 	collectionTemplatePath := filepath.Join(layoutsDir, "index.html")
 	bookTemplatePath := filepath.Join(layoutsDir, "_book.html")
 	chapterTemplatePath := filepath.Join(layoutsDir, "_chapter.html")
+
+	minifier := minify.New()
+	minifier.Add("text/html", &html.Minifier{
+		KeepDefaultAttrVals: true,
+		KeepDocumentTags:    true,
+		KeepSpecialComments: true,
+		KeepQuotes:          true,
+	})
+	minifier.AddFunc("text/css", css.Minify)
 
 	if err := os.MkdirAll(outputDir, DirPerms); err != nil {
 		return fmt.Errorf("failed to create output directory. %w", err)
@@ -66,7 +79,9 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 	// ---
 	// Collection index
 	// ---
-	outIndex, err := os.Create(filepath.Join(outputDir, "index.html"))
+	outputIndexPath := filepath.Join(outputDir, "index.html")
+
+	outIndex, err := os.Create(outputIndexPath)
 	if err != nil {
 		return fmt.Errorf("failed to create collection index file. %w", err)
 	}
@@ -75,13 +90,15 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 		return fmt.Errorf("failed to write collection index file. %w", err)
 	}
 
+	if enableMinify {
+		if err := minifyFileHTML(outputIndexPath, outIndex, minifier); err != nil {
+			return fmt.Errorf("failed to minify collection index output file. %w", err)
+		}
+	}
+
 	if err := outIndex.Close(); err != nil {
 		return fmt.Errorf("failed to close collection index file. %w", err)
 	}
-
-	// ---
-	// Book index & chapters
-	// ---
 
 	// TODO: epub generation
 	for _, book := range c.Books {
@@ -101,7 +118,13 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 			return fmt.Errorf("failed to write book `%v` index file. %w", book.PageName, err)
 		}
 
-		if err := renderBookChapters(book.Chapters, chapterTemplate, bookOutputDir); err != nil {
+		if enableMinify {
+			if err := minifyFileHTML(bookTemplatePath, outBook, minifier); err != nil {
+				return fmt.Errorf("failed to minify book `%v` index output file. %w", book.PageName, err)
+			}
+		}
+
+		if err := renderBookChapters(book.Chapters, chapterTemplate, chapterTemplatePath, bookOutputDir, minifier, enableMinify); err != nil {
 			return fmt.Errorf("failed to write book `%v` chapter file. %w", book.PageName, err)
 		}
 
@@ -123,7 +146,7 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string) erro
 	return nil
 }
 
-func renderBookChapters(chapters []Chapter, chapterTemplate *template.Template, bookOutputDir string) error {
+func renderBookChapters(chapters []Chapter, chapterTemplate *template.Template, chapterTemplatePath, bookOutputDir string, minifier *minify.M, enableMinify bool) error {
 	for _, chapter := range chapters {
 		fChapter, err := os.Create(filepath.Join(bookOutputDir, chapter.PageName+".html"))
 		if err != nil {
@@ -133,6 +156,12 @@ func renderBookChapters(chapters []Chapter, chapterTemplate *template.Template, 
 
 		if err := chapterTemplate.ExecuteTemplate(fChapter, "_chapter.html", chapter); err != nil {
 			return err
+		}
+
+		if enableMinify {
+			if err := minifyFileHTML(chapterTemplatePath, fChapter, minifier); err != nil {
+				return fmt.Errorf("failed to minify book `%v` chapter `%v` index output file. %w", chapter.Parent.PageName, chapter.PageName, err)
+			}
 		}
 	}
 
@@ -182,6 +211,32 @@ func copyStaticFilesToDir(currDir, newDir, rootDir string, relExcludes, relExclu
 		if err := os.Link(oldPath, newPath); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func minifyFileHTML(path string, f *os.File, minifier *minify.M) error {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	mb, err := minifier.Bytes("text/html", b)
+	if err != nil {
+		return err
+	}
+
+	if err := f.Truncate(0); err != nil {
+		return err
+	}
+
+	if _, err := f.Seek(0, 0); err != nil {
+		return err
+	}
+
+	if _, err := f.Write(mb); err != nil {
+		return err
 	}
 
 	return nil
