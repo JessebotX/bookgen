@@ -18,8 +18,8 @@ import (
 
 	"github.com/goccy/go-yaml"
 
-	"github.com/JessebotX/bookgen/highlighting"
-	"github.com/JessebotX/bookgen/meta"
+	"github.com/JessebotX/bookgen/internal/highlighting"
+	"github.com/JessebotX/bookgen/internal/meta"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
