@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"strconv"
 	"time"
+
+	"github.com/JessebotX/bookgen"
 )
 
 type FlagType int
@@ -113,7 +115,7 @@ func main() {
 
 	decodeTimeStart := time.Now()
 
-	collection, err := DecodeCollection(inputDirFlag.Value)
+	collection, err := bookgen.DecodeCollection(inputDirFlag.Value)
 	if err != nil {
 		errorExit(1, err.Error())
 	}

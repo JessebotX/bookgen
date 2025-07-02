@@ -9,6 +9,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/JessebotX/bookgen"
+
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
 	"github.com/tdewolff/minify/v2/html"
@@ -22,7 +24,7 @@ const (
 	DirPerms = 0755
 )
 
-func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string, enableMinify bool) error {
+func RenderCollectionToWebsite(c *bookgen.Collection, workingDir, outputDir string, enableMinify bool) error {
 	layoutsDir := filepath.Join(workingDir, "layouts")
 	collectionTemplatePath := filepath.Join(layoutsDir, "index.html")
 	bookTemplatePath := filepath.Join(layoutsDir, "_book.html")
@@ -161,7 +163,7 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string, enab
 	return nil
 }
 
-func renderBookChapters(chapters []Chapter, chapterTemplate *template.Template, chapterTemplatePath, bookOutputDir string, minifier *minify.M, enableMinify bool) error {
+func renderBookChapters(chapters []bookgen.Chapter, chapterTemplate *template.Template, chapterTemplatePath, bookOutputDir string, minifier *minify.M, enableMinify bool) error {
 	for _, chapter := range chapters {
 		chapterOutputPath := filepath.Join(bookOutputDir, chapter.PageName+".html")
 
