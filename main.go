@@ -109,21 +109,36 @@ func main() {
 	// Parse collection
 	// ---
 
-	timeStart := time.Now()
+	totalTimeStart := time.Now()
+
+	decodeTimeStart := time.Now()
 
 	collection, err := DecodeCollection(inputDirFlag.Value)
 	if err != nil {
 		errorExit(1, err.Error())
 	}
 
+	decodeTimeElapsed := time.Since(decodeTimeStart)
+
+	if !SuppressNonEssentialOutput {
+		fmt.Printf("Decoded (%v)\n", decodeTimeElapsed)
+	}
+
+	renderTimeStart := time.Now()
+
 	if err := RenderCollectionToWebsite(&collection, inputDirFlag.Value, outputDirFlag.Value, enableMinify); err != nil {
 		errorExit(1, err.Error())
 	}
 
-	timeElapsed := time.Since(timeStart)
+	renderTimeElapsed := time.Since(renderTimeStart)
 
 	if !SuppressNonEssentialOutput {
-		fmt.Printf(terminalPrintBold("Done")+" (%v)\n", timeElapsed)
+		fmt.Printf("Generated website (%v)\n", renderTimeElapsed)
+	}
+
+	totalTimeElapsed := time.Since(totalTimeStart)
+	if !SuppressNonEssentialOutput {
+		fmt.Printf(terminalPrintBold("Done")+" (%v)\n", totalTimeElapsed)
 	}
 }
 

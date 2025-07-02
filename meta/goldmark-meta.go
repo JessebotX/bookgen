@@ -30,7 +30,7 @@
 // Changes made to original:
 //   - uses "github.com/goccy/go-yaml" as a dependency instead of
 //     "gopkg.in/yaml.v2"
-package main
+package meta
 
 import (
 	"bytes"

@@ -12,9 +12,14 @@ import (
 	"strings"
 	"time"
 
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
+
 	"github.com/go-viper/mapstructure/v2"
 
 	"github.com/goccy/go-yaml"
+
+	"github.com/JessebotX/bookgen/highlighting"
+	"github.com/JessebotX/bookgen/meta"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -25,7 +30,12 @@ import (
 var (
 	MarkdownToHTML = goldmark.New(
 		goldmark.WithExtensions(
-			Meta,
+			highlighting.NewHighlighting(
+				highlighting.WithFormatOptions(
+					chromahtml.WithLineNumbers(true),
+				),
+			),
+			meta.Meta,
 			extension.GFM,
 			extension.Footnote,
 			extension.Typographer,
@@ -38,6 +48,12 @@ var (
 	)
 	MarkdownToXHTML = goldmark.New(
 		goldmark.WithExtensions(
+			highlighting.NewHighlighting(
+				highlighting.WithFormatOptions(
+					chromahtml.WithLineNumbers(true),
+				),
+			),
+			meta.Meta,
 			extension.GFM,
 			extension.Footnote,
 			extension.Typographer,
@@ -341,7 +357,7 @@ func convertMarkdownToHTML(content []byte, useXHTML bool) (template.HTML, map[st
 		return template.HTML(""), nil, err
 	}
 
-	metadata := Get(context)
+	metadata := meta.Get(context)
 
 	return template.HTML(buffer.String()), metadata, nil
 }
