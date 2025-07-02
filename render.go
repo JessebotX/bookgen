@@ -14,6 +14,8 @@ import (
 	"github.com/tdewolff/minify/v2/html"
 	"github.com/tdewolff/minify/v2/js"
 	"github.com/tdewolff/minify/v2/svg"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -130,7 +132,14 @@ func RenderCollectionToWebsite(c *Collection, workingDir, outputDir string, enab
 			}
 		}
 
-		if err := renderBookChapters(book.Chapters, chapterTemplate, chapterTemplatePath, bookOutputDir, minifier, enableMinify); err != nil {
+		g := new(errgroup.Group)
+		g.Go(func() error {
+			if err := renderBookChapters(book.Chapters, chapterTemplate, chapterTemplatePath, bookOutputDir, minifier, enableMinify); err != nil {
+				return err
+			}
+			return nil
+		})
+		if err := g.Wait(); err != nil {
 			return fmt.Errorf("failed to write book `%v` chapter file. %w", book.PageName, err)
 		}
 

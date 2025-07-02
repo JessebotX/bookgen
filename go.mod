@@ -8,6 +8,7 @@ require (
 	github.com/goccy/go-yaml v1.18.0
 	github.com/tdewolff/minify/v2 v2.23.8
 	github.com/yuin/goldmark v1.7.12
+	golang.org/x/sync v0.15.0
 )
 
 require (

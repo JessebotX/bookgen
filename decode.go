@@ -25,6 +25,8 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
+
+	"golang.org/x/sync/errgroup"
 )
 
 var (
@@ -213,19 +215,27 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 		}
 	}
 
+	g := new(errgroup.Group)
 	b.Chapters = make([]Chapter, 0)
 	for _, item := range items {
 		if item.IsDir() || !strings.HasSuffix(item.Name(), ".md") {
 			continue
 		}
 
+		var c Chapter
 		chapterSourcePath := filepath.Join(chaptersDir, item.Name())
-		c, err := DecodeChapter(chapterSourcePath, &b)
-		if err != nil {
-			return b, fmt.Errorf("book %v: %w", b.PageName, err)
-		}
+		g.Go(func() error {
+			c, err = DecodeChapter(chapterSourcePath, &b)
+			if err != nil {
+				return err
+			}
+			b.Chapters = append(b.Chapters, c)
+			return nil
+		})
+	}
 
-		b.Chapters = append(b.Chapters, c)
+	if err := g.Wait(); err != nil {
+		return b, fmt.Errorf("book %v: %w", b.PageName, err)
 	}
 
 	// Sort chapters and fill Next and Previous pointers
