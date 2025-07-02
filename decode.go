@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	mapstructure "github.com/go-viper/mapstructure/v2"
+	"github.com/go-viper/mapstructure/v2"
 
-	yaml "github.com/goccy/go-yaml"
+	"github.com/goccy/go-yaml"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
