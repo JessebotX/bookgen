@@ -19,7 +19,7 @@ const (
 )
 
 var (
-	Version                    = "0.7.0"
+	Version                    = "0.8.1"
 	SuppressNonEssentialOutput = false
 	EnablePlainOutput          = false
 	ProgramName                = "bookgen"

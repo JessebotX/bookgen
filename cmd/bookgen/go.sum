@@ -1,5 +1,5 @@
-github.com/JessebotX/bookgen v0.7.0 h1:j2b3tRYipBI+iM4WQVuLRKVEIbaM41BVeSVh/43mx+Q=
-github.com/JessebotX/bookgen v0.7.0/go.mod h1:2HXnau7wIHhPBjEVdNwIxGUiigSvyREiQMOJMtYiS3A=
+github.com/JessebotX/bookgen v0.8.0 h1:uCx5oSqYja03OWGnsxR8t5BZqF/azUnEHam4rUhxyRs=
+github.com/JessebotX/bookgen v0.8.0/go.mod h1:r3eb1ySS+8dmd9Gbq/gHvSjGsZSv78XIMsv/UHznLKU=
 github.com/alecthomas/assert/v2 v2.11.0 h1:2Q9r3ki8+JYXvGsDyBXwH3LcJ+WK5D0gc5E8vS6K3D0=
 github.com/alecthomas/assert/v2 v2.11.0/go.mod h1:Bze95FyfUr7x34QZrjL+XP+0qgp/zg8yS+TtBj1WA3k=
 github.com/alecthomas/chroma/v2 v2.19.0 h1:Im+SLRgT8maArxv81mULDWN8oKxkzboH07CHesxElq4=
