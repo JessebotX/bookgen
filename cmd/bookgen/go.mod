@@ -3,7 +3,7 @@ module github.com/JessebotX/bookgen/cmd/bookgen
 go 1.24.1
 
 require (
-	github.com/JessebotX/bookgen v0.8.0
+	github.com/JessebotX/bookgen v0.8.1
 	github.com/tdewolff/minify/v2 v2.23.8
 	golang.org/x/sync v0.15.0
 )
