@@ -19,10 +19,10 @@ const (
 )
 
 var (
-	Version                    = "0.8.1"
-	SuppressNonEssentialOutput = false
-	EnablePlainOutput          = false
-	ProgramName                = "bookgen"
+	Version              = "0.8.1"
+	NoNonEssentialOutput = false
+	EnablePlainOutput    = false
+	ProgramName          = "bookgen"
 )
 
 type Flag struct {
@@ -62,18 +62,18 @@ func main() {
 		Description: "Strip text styling/terminal escape codes from terminal output.",
 		Value:       "false",
 	}
-	suppressNonEssentialOutputFlag := Flag{
-		Name:        "suppress-non-essential-output",
+	noNonEssentialOutputFlag := Flag{
+		Name:        "no-non-essential-output",
 		Type:        FlagBool,
 		ShortName:   "q",
-		Description: "Suppress non-essential terminal output.",
+		Description: "Disable non-essential terminal output.",
 		Value:       "false",
 	}
 	minifyFlag := Flag{
 		Name:        "minify",
 		Type:        FlagBool,
 		ShortName:   "",
-		Description: "Minify output files.",
+		Description: "Enable minification of output files.",
 		Value:       "false",
 	}
 
@@ -81,7 +81,7 @@ func main() {
 		&inputDirFlag,
 		&outputDirFlag,
 		&plainOutputFlag,
-		&suppressNonEssentialOutputFlag,
+		&noNonEssentialOutputFlag,
 		&minifyFlag,
 	})
 	if err != nil {
@@ -93,7 +93,7 @@ func main() {
 	}
 
 	EnablePlainOutput, _ = strconv.ParseBool(plainOutputFlag.Value)
-	SuppressNonEssentialOutput, _ = strconv.ParseBool(suppressNonEssentialOutputFlag.Value)
+	NoNonEssentialOutput, _ = strconv.ParseBool(noNonEssentialOutputFlag.Value)
 	enableMinify, _ := strconv.ParseBool(minifyFlag.Value)
 
 	// make default output dir generate relative to working dir if
@@ -122,7 +122,7 @@ func main() {
 
 	decodeTimeElapsed := time.Since(decodeTimeStart)
 
-	if !SuppressNonEssentialOutput {
+	if !NoNonEssentialOutput {
 		fmt.Printf("Decoded (%v)\n", decodeTimeElapsed)
 	}
 
@@ -134,12 +134,12 @@ func main() {
 
 	renderTimeElapsed := time.Since(renderTimeStart)
 
-	if !SuppressNonEssentialOutput {
+	if !NoNonEssentialOutput {
 		fmt.Printf("Generated website (%v)\n", renderTimeElapsed)
 	}
 
 	totalTimeElapsed := time.Since(totalTimeStart)
-	if !SuppressNonEssentialOutput {
+	if !NoNonEssentialOutput {
 		fmt.Printf(terminalPrintBold("Done")+" (%v)\n", totalTimeElapsed)
 	}
 }
