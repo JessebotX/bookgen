@@ -15,7 +15,7 @@ type Command struct {
 	Flags any
 }
 
-func flagParse(args []string, opts any) ([]string, error) {
+func optsParse(args []string, opts any) ([]string, error) {
 	posArgs := make([]string, 0)
 
 	optsStructValue := reflect.ValueOf(opts).Elem()
@@ -107,7 +107,7 @@ func flagParse(args []string, opts any) ([]string, error) {
 	return posArgs, nil
 }
 
-func flagPrintHelp(opts any, commands []Command) {
+func optsPrintHelp(opts any, commands []Command) {
 	indentSize := 4
 	indentLevel1 := 1
 	indentLevel2 := 3

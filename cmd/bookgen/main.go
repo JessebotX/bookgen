@@ -20,9 +20,9 @@ type FlagOpts struct {
 	Version              bool   `long:"version" short:"v" desc:"Print program version"`
 	InputDirectory       string `long:"input-directory" short:"i" desc:"Directory containing source files with a bookgen.yml"`
 	OutputDirectory      string `long:"output-directory" short:"o" desc:"Directory to output distributable files"`
+	Minify               bool   `long:"minify" desc:"Minify output/distributable files"`
 	PlainOutput          bool   `long:"plain" desc:"Remove terminal escape codes from printing into stdout/stderr"`
 	NoNonEssentialOutput bool   `long:"no-non-essential-output" short:"q" desc:"Prevent printing non-error messages into stdout/stderr"`
-	Minify               bool   `long:"minify" desc:"Minify output/distributable files"`
 }
 
 func main() {
@@ -46,7 +46,7 @@ func main() {
 	commands := []Command{buildCommand, helpCommand, versionCommand}
 	var opts FlagOpts
 
-	positionalArgs, err := flagParse(os.Args, &opts)
+	positionalArgs, err := optsParse(os.Args, &opts)
 	if err != nil {
 		errorExit(1, err.Error())
 	}
@@ -58,7 +58,7 @@ func main() {
 
 	// help and version commands/flags
 	if opts.Help || (len(positionalArgs) > 0 && positionalArgs[0] == helpCommand.Name) {
-		flagPrintHelp(&opts, commands)
+		optsPrintHelp(&opts, commands)
 
 		os.Exit(0)
 	}
