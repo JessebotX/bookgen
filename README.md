@@ -10,6 +10,7 @@ A static site generator designed for a collection of Markdown-based books.
 
 - [ ] RSS feed
 - [ ] EPUB
+- [ ] Book search indexes
 - [ ] Init command
 - [ ] Default template
 - [ ] General program documentation
