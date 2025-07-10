@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	MarkdownToHTML = goldmark.New(
+	markdownToHTML = goldmark.New(
 		goldmark.WithExtensions(
 			highlighting.NewHighlighting(
 				highlighting.WithFormatOptions(
@@ -48,7 +48,7 @@ var (
 		),
 		goldmark.WithRendererOptions(),
 	)
-	MarkdownToXHTML = goldmark.New(
+	markdownToXHTML = goldmark.New(
 		goldmark.WithExtensions(
 			highlighting.NewHighlighting(
 				highlighting.WithFormatOptions(
@@ -178,7 +178,7 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	}
 	b.Content.Raw = string(rawMarkdown)
 
-	contentHTML, _, err := convertMarkdownToHTML(rawMarkdown, false)
+	contentHTML, _, err := convertmarkdownToHTML(rawMarkdown, false)
 	if err != nil {
 		return b, fmt.Errorf("book `%v`: failed to convert markdown to HTML. %w", b.PageName, err)
 	}
@@ -277,7 +277,7 @@ func DecodeChapter(path string, parent *Book) (Chapter, error) {
 	}
 
 	c.Content.Raw = string(rawMarkdown)
-	contentHTML, metadata, err := convertMarkdownToHTML(rawMarkdown, false)
+	contentHTML, metadata, err := convertmarkdownToHTML(rawMarkdown, false)
 	if err != nil {
 		return c, fmt.Errorf("chapter `%v`: failed to convert markdown to HTML. %w", c.PageName, err)
 	}
@@ -352,15 +352,15 @@ func stringToTime(sTime string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("date string `%v` does not match any of the following formats:\n%w", sTime, errs)
 }
 
-func convertMarkdownToHTML(content []byte, useXHTML bool) (template.HTML, map[string]any, error) {
+func convertmarkdownToHTML(content []byte, useXHTML bool) (template.HTML, map[string]any, error) {
 	var buffer bytes.Buffer
 	context := parser.NewContext()
 
 	var md goldmark.Markdown
 	if useXHTML {
-		md = MarkdownToXHTML
+		md = markdownToXHTML
 	} else {
-		md = MarkdownToHTML
+		md = markdownToHTML
 	}
 
 	if err := md.Convert(content, &buffer, parser.WithContext(context)); err != nil {

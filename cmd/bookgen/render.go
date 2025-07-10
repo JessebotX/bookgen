@@ -24,22 +24,25 @@ const (
 	DirPerms = 0755
 )
 
-func RenderCollectionToWebsite(c *bookgen.Collection, workingDir, outputDir string, enableMinify bool) error {
-	layoutsDir := filepath.Join(workingDir, "layouts")
-	collectionTemplatePath := filepath.Join(layoutsDir, "index.html")
-	bookTemplatePath := filepath.Join(layoutsDir, "_book.html")
-	chapterTemplatePath := filepath.Join(layoutsDir, "_chapter.html")
+var (
+	globalMinifier = minify.New()
+)
 
-	minifier := minify.New()
-	minifier.Add("text/html", &html.Minifier{
+func RenderCollectionToWebsite(c *bookgen.Collection, workingDir, outputDir string, enableMinify bool) error {
+	globalMinifier.Add("text/html", &html.Minifier{
 		KeepDefaultAttrVals: true,
 		KeepDocumentTags:    true,
 		KeepSpecialComments: true,
 		KeepQuotes:          true,
 	})
-	minifier.AddFunc("text/css", css.Minify)
-	minifier.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
-	minifier.AddFunc("image/svg+xml", svg.Minify)
+	globalMinifier.AddFunc("text/css", css.Minify)
+	globalMinifier.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
+	globalMinifier.AddFunc("image/svg+xml", svg.Minify)
+
+	layoutsDir := filepath.Join(workingDir, "layouts")
+	collectionTemplatePath := filepath.Join(layoutsDir, "index.html")
+	bookTemplatePath := filepath.Join(layoutsDir, "_book.html")
+	chapterTemplatePath := filepath.Join(layoutsDir, "_chapter.html")
 
 	if err := os.MkdirAll(outputDir, DirPerms); err != nil {
 		return fmt.Errorf("failed to create output directory. %w", err)
@@ -100,7 +103,7 @@ func RenderCollectionToWebsite(c *bookgen.Collection, workingDir, outputDir stri
 	}
 
 	if enableMinify {
-		if err := minifyFileHTML(outputIndexPath, outIndex, minifier); err != nil {
+		if err := minifyFileHTML(outputIndexPath, outIndex); err != nil {
 			return fmt.Errorf("failed to minify collection index output file. %w", err)
 		}
 	}
@@ -129,14 +132,14 @@ func RenderCollectionToWebsite(c *bookgen.Collection, workingDir, outputDir stri
 		}
 
 		if enableMinify {
-			if err := minifyFileHTML(bookOutputPath, outBook, minifier); err != nil {
+			if err := minifyFileHTML(bookOutputPath, outBook); err != nil {
 				return fmt.Errorf("failed to minify book `%v` index output file. %w", book.PageName, err)
 			}
 		}
 
 		g := new(errgroup.Group)
 		g.Go(func() error {
-			if err := renderBookChapters(book.Chapters, chapterTemplate, chapterTemplatePath, bookOutputDir, minifier, enableMinify); err != nil {
+			if err := renderBookChapters(book.Chapters, chapterTemplate, chapterTemplatePath, bookOutputDir, enableMinify); err != nil {
 				return err
 			}
 			return nil
@@ -163,7 +166,7 @@ func RenderCollectionToWebsite(c *bookgen.Collection, workingDir, outputDir stri
 	return nil
 }
 
-func renderBookChapters(chapters []bookgen.Chapter, chapterTemplate *template.Template, chapterTemplatePath, bookOutputDir string, minifier *minify.M, enableMinify bool) error {
+func renderBookChapters(chapters []bookgen.Chapter, chapterTemplate *template.Template, chapterTemplatePath, bookOutputDir string, enableMinify bool) error {
 	for _, chapter := range chapters {
 		chapterOutputPath := filepath.Join(bookOutputDir, chapter.PageName+".html")
 
@@ -178,7 +181,7 @@ func renderBookChapters(chapters []bookgen.Chapter, chapterTemplate *template.Te
 		}
 
 		if enableMinify {
-			if err := minifyFileHTML(chapterOutputPath, fChapter, minifier); err != nil {
+			if err := minifyFileHTML(chapterOutputPath, fChapter); err != nil {
 				return fmt.Errorf("failed to minify book `%v` chapter `%v` index output file. %w", chapter.Parent.PageName, chapter.PageName, err)
 			}
 		}
@@ -235,13 +238,13 @@ func copyStaticFilesToDir(currDir, newDir, rootDir string, relExcludes, relExclu
 	return nil
 }
 
-func minifyFileHTML(path string, f *os.File, minifier *minify.M) error {
+func minifyFileHTML(path string, f *os.File) error {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
-	mb, err := minifier.Bytes("text/html", b)
+	mb, err := globalMinifier.Bytes("text/html", b)
 	if err != nil {
 		return err
 	}
