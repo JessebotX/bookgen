@@ -29,6 +29,9 @@ func main() {
 	// ---
 	// Read CLI arguments
 	// ---
+
+	// These commands are defined here merely for printing help
+	// information.
 	helpCommand := CommandInfo{
 		Name:        "help",
 		Description: "Print help/usage information",
