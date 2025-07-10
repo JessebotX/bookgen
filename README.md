@@ -8,6 +8,8 @@ A static site generator designed for a collection of Markdown-based books.
 
 ## TODO
 
+- [ ] RSS feed
+- [ ] EPUB
 - [ ] Init command
 - [ ] Default template
 - [ ] General program documentation
