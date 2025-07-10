@@ -15,13 +15,13 @@ var (
 	EnablePlainOutput = false
 )
 
-type Opts struct {
-	Help                 bool   `long:"help" short:"h" desc:"print help/usage information"`
-	Version              bool   `long:"version" short:"v" desc:"print program version"`
-	InputDirectory       string `long:"input-directory" short:"i" desc:"directory containing source files with a bookgen.yml"`
-	OutputDirectory      string `long:"output-directory" short:"o" desc:"directory to output distributable files"`
-	PlainOutput          bool   `long:"plain" desc:"remove terminal escape codes from printing into stdout/stderr"`
-	NoNonEssentialOutput bool   `long:"no-non-essential-output" short:"q" desc:"prevent printing non-error messages into stdout/stderr"`
+type FlagOpts struct {
+	Help                 bool   `long:"help" short:"h" desc:"Print help/usage information"`
+	Version              bool   `long:"version" short:"v" desc:"Print program version"`
+	InputDirectory       string `long:"input-directory" short:"i" desc:"Directory containing source files with a bookgen.yml"`
+	OutputDirectory      string `long:"output-directory" short:"o" desc:"Directory to output distributable files"`
+	PlainOutput          bool   `long:"plain" desc:"Remove terminal escape codes from printing into stdout/stderr"`
+	NoNonEssentialOutput bool   `long:"no-non-essential-output" short:"q" desc:"Prevent printing non-error messages into stdout/stderr"`
 	Minify               bool   `long:"minify" desc:"Minify output/distributable files"`
 }
 
@@ -30,24 +30,45 @@ func main() {
 	// Read CLI arguments
 	// ---
 	// Home-made cli argument parsing
-	var opts Opts
+	helpCommand := Command{
+		Name:        "help",
+		Description: "Print help/usage information",
+	}
+	versionCommand := Command{
+		Name:        "version",
+		Description: "Print program version",
+	}
+	buildCommand := Command{
+		Name:        "build",
+		Description: "Build source files for distribution",
+	}
 
-	_, err := flagParse(os.Args, &opts)
+	commands := []Command{buildCommand, helpCommand, versionCommand}
+	var opts FlagOpts
+
+	positionalArgs, err := flagParse(os.Args, &opts)
 	if err != nil {
 		errorExit(1, err.Error())
 	}
 
-	if opts.Help {
-		flagPrintHelp(&opts)
+	// set default command
+	if len(positionalArgs) == 0 {
+		positionalArgs = append(positionalArgs, buildCommand.Name)
+	}
+
+	// help and version commands/flags
+	if opts.Help || (len(positionalArgs) > 0 && positionalArgs[0] == helpCommand.Name) {
+		flagPrintHelp(&opts, commands)
 
 		os.Exit(0)
 	}
 
-	if opts.Version {
+	if opts.Version || (len(positionalArgs) > 0 && positionalArgs[0] == versionCommand.Name) {
 		fmt.Printf("bookgen version %v %v/%v\n", Version, runtime.GOOS, runtime.GOARCH)
 		os.Exit(0)
 	}
 
+	// set flags
 	EnablePlainOutput = opts.PlainOutput
 
 	// Default output directory is relative to the input directory.
@@ -64,36 +85,40 @@ func main() {
 	// Parse collection
 	// ---
 
-	totalTimeStart := time.Now()
+	if positionalArgs[0] == buildCommand.Name {
+		totalTimeStart := time.Now()
 
-	decodeTimeStart := time.Now()
+		decodeTimeStart := time.Now()
 
-	collection, err := bookgen.DecodeCollection(opts.InputDirectory)
-	if err != nil {
-		errorExit(1, err.Error())
-	}
+		collection, err := bookgen.DecodeCollection(opts.InputDirectory)
+		if err != nil {
+			errorExit(1, err.Error())
+		}
 
-	decodeTimeElapsed := time.Since(decodeTimeStart)
+		decodeTimeElapsed := time.Since(decodeTimeStart)
 
-	if !opts.NoNonEssentialOutput {
-		fmt.Printf("Decoded (%v)\n", decodeTimeElapsed)
-	}
+		if !opts.NoNonEssentialOutput {
+			fmt.Printf("Decoded (%v)\n", decodeTimeElapsed)
+		}
 
-	renderTimeStart := time.Now()
+		renderTimeStart := time.Now()
 
-	if err := RenderCollectionToWebsite(&collection, opts.InputDirectory, opts.OutputDirectory, opts.Minify); err != nil {
-		errorExit(1, err.Error())
-	}
+		if err := RenderCollectionToWebsite(&collection, opts.InputDirectory, opts.OutputDirectory, opts.Minify); err != nil {
+			errorExit(1, err.Error())
+		}
 
-	renderTimeElapsed := time.Since(renderTimeStart)
+		renderTimeElapsed := time.Since(renderTimeStart)
 
-	if !opts.NoNonEssentialOutput {
-		fmt.Printf("Generated website (%v)\n", renderTimeElapsed)
-	}
+		if !opts.NoNonEssentialOutput {
+			fmt.Printf("Generated website (%v)\n", renderTimeElapsed)
+		}
 
-	totalTimeElapsed := time.Since(totalTimeStart)
-	if !opts.NoNonEssentialOutput {
-		fmt.Printf(terminalPrintBold("Done")+" (%v)\n", totalTimeElapsed)
+		totalTimeElapsed := time.Since(totalTimeStart)
+		if !opts.NoNonEssentialOutput {
+			fmt.Printf(terminalPrintBold("Done")+" (%v)\n", totalTimeElapsed)
+		}
+	} else {
+		errorExit(1, "unrecognized command `%v`. See `%v --help` for more information", positionalArgs[0], os.Args[0])
 	}
 }
 

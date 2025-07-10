@@ -7,6 +7,14 @@ import (
 	"strings"
 )
 
+type Command struct {
+	Name        string
+	Description string
+
+	// TODO: support flagsets
+	Flags any
+}
+
 func flagParse(args []string, opts any) ([]string, error) {
 	posArgs := make([]string, 0)
 
@@ -99,15 +107,36 @@ func flagParse(args []string, opts any) ([]string, error) {
 	return posArgs, nil
 }
 
-func flagPrintHelp(opts any) {
+func flagPrintHelp(opts any, commands []Command) {
 	indentSize := 4
+	indentLevel1 := 1
+	indentLevel2 := 3
+
 	fmt.Println("USAGE")
 
-	for range indentSize {
+	for range indentSize * indentLevel1 {
 		fmt.Printf(" ")
 	}
 
 	fmt.Println("bookgen [command] [flags...]")
+
+	fmt.Println()
+
+	fmt.Println("COMMANDS")
+
+	for _, cmd := range commands {
+		for range indentSize * indentLevel1 {
+			fmt.Printf(" ")
+		}
+
+		fmt.Println(cmd.Name)
+
+		for range indentSize * indentLevel2 {
+			fmt.Printf(" ")
+		}
+
+		fmt.Println(cmd.Description)
+	}
 
 	fmt.Println()
 
@@ -123,7 +152,7 @@ func flagPrintHelp(opts any) {
 			continue
 		}
 
-		for range indentSize {
+		for range indentSize * indentLevel1 {
 			fmt.Printf(" ")
 		}
 
@@ -147,7 +176,7 @@ func flagPrintHelp(opts any) {
 			continue
 		}
 
-		for range indentSize * 2 {
+		for range indentSize * indentLevel2 {
 			fmt.Printf(" ")
 		}
 
