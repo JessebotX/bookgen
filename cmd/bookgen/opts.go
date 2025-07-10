@@ -7,12 +7,9 @@ import (
 	"strings"
 )
 
-type Command struct {
+type CommandInfo struct {
 	Name        string
 	Description string
-
-	// TODO: support flagsets
-	Flags any
 }
 
 func optsParse(args []string, opts any) ([]string, error) {
@@ -107,7 +104,7 @@ func optsParse(args []string, opts any) ([]string, error) {
 	return posArgs, nil
 }
 
-func optsPrintHelp(opts any, commands []Command) {
+func optsPrintHelp(opts any, commands []CommandInfo) {
 	indentSize := 4
 	indentLevel1 := 1
 	indentLevel2 := 3

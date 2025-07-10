@@ -29,46 +29,34 @@ func main() {
 	// ---
 	// Read CLI arguments
 	// ---
-	// Home-made cli argument parsing
-	helpCommand := Command{
+	helpCommand := CommandInfo{
 		Name:        "help",
 		Description: "Print help/usage information",
 	}
-	versionCommand := Command{
+	versionCommand := CommandInfo{
 		Name:        "version",
 		Description: "Print program version",
 	}
-	buildCommand := Command{
+	buildCommand := CommandInfo{
 		Name:        "build",
 		Description: "Build source files for distribution",
 	}
 
-	commands := []Command{buildCommand, helpCommand, versionCommand}
 	var opts FlagOpts
+	commands := []CommandInfo{buildCommand, helpCommand, versionCommand}
 
 	positionalArgs, err := optsParse(os.Args, &opts)
 	if err != nil {
 		errorExit(1, err.Error())
 	}
 
-	// set default command
+	// ---
+	// Set defaults
+	// ---
 	if len(positionalArgs) == 0 {
 		positionalArgs = append(positionalArgs, buildCommand.Name)
 	}
 
-	// help and version commands/flags
-	if opts.Help || (len(positionalArgs) > 0 && positionalArgs[0] == helpCommand.Name) {
-		optsPrintHelp(&opts, commands)
-
-		os.Exit(0)
-	}
-
-	if opts.Version || (len(positionalArgs) > 0 && positionalArgs[0] == versionCommand.Name) {
-		fmt.Printf("bookgen version %v %v/%v\n", Version, runtime.GOOS, runtime.GOARCH)
-		os.Exit(0)
-	}
-
-	// set flags
 	EnablePlainOutput = opts.PlainOutput
 
 	// Default output directory is relative to the input directory.
@@ -85,7 +73,14 @@ func main() {
 	// Parse collection
 	// ---
 
-	if positionalArgs[0] == buildCommand.Name {
+	// help and version commands/flags
+	if opts.Help || positionalArgs[0] == helpCommand.Name {
+		optsPrintHelp(&opts, commands)
+		os.Exit(0)
+	} else if opts.Version || positionalArgs[0] == versionCommand.Name {
+		fmt.Printf("bookgen version %v %v/%v\n", Version, runtime.GOOS, runtime.GOARCH)
+		os.Exit(0)
+	} else if positionalArgs[0] == buildCommand.Name {
 		totalTimeStart := time.Now()
 
 		decodeTimeStart := time.Now()
