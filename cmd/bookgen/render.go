@@ -222,10 +222,14 @@ func copyStaticFilesToDir(currDir, newDir, rootDir string, relExcludes, relExclu
 				return err
 			}
 
-			return copyStaticFilesToDir(oldPath, newDir, rootDir, relExcludes, relExcludesPatterns)
+			if err := copyStaticFilesToDir(oldPath, newDir, rootDir, relExcludes, relExcludesPatterns); err != nil {
+				return err
+			}
+
+			continue
 		}
 
-		// Copy item from old to new path (re-copy if already exists
+		// Copy item from old to new path (re-copy if already exists)
 		if err := os.RemoveAll(newPath); err != nil {
 			return err
 		}
