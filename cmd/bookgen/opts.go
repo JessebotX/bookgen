@@ -8,8 +8,90 @@ import (
 )
 
 type CommandInfo struct {
+	IsSet       bool
 	Name        string
 	Description string
+}
+
+func optsParseSubcommand(args []string, opts any, name, description string) (CommandInfo, []string, error) {
+	command := CommandInfo{
+		IsSet:       false,
+		Name:        name,
+		Description: description,
+	}
+
+	if len(args) == 0 || args[0] != name {
+		command.IsSet = false
+		return command, args, nil
+	}
+
+	command.IsSet = true
+	posArgs := make([]string, 0)
+
+	if opts == nil {
+		for i := 1; i < len(args); i++ {
+			posArgs = append(posArgs, args[i])
+		}
+		return command, posArgs, nil
+	}
+
+	optsStructValue := reflect.ValueOf(opts).Elem()
+	optsStructType := reflect.TypeOf(opts).Elem()
+
+	for i := 1; i < len(args); i++ {
+		isSet := false
+
+		for j := 0; j < optsStructType.NumField(); j++ {
+			field := optsStructType.Field(j)
+			flag, ok := field.Tag.Lookup("long")
+			if !ok {
+				return command, []string{}, fmt.Errorf("field %v missing/empty tag name (required)", field.Name)
+			}
+
+			short, shortExists := field.Tag.Lookup("short")
+			_ = shortExists
+
+			if strings.EqualFold(args[i], "--"+flag) || strings.EqualFold(args[i], "-"+short) {
+				fieldValue := optsStructValue.FieldByName(field.Name)
+				if !fieldValue.CanSet() {
+					return command, posArgs, fmt.Errorf("arg '%v': field %v cannot be set", args[i], field.Name)
+				}
+
+				switch fieldValue.Kind() {
+				case reflect.Bool:
+					fieldValue.SetBool(true)
+				case reflect.String:
+					if (i + 1) >= len(args) {
+						return command, posArgs, fmt.Errorf("arg '%v': missing value argument", args[i])
+					}
+
+					fieldValue.SetString(args[i+1])
+				case reflect.Int:
+					if (i + 1) >= len(args) {
+						return command, posArgs, fmt.Errorf("arg '%v': missing value argument", args[i])
+					}
+
+					intArg, err := strconv.Atoi(args[i+1])
+					if err != nil {
+						return command, posArgs, fmt.Errorf("arg '%v': %w", args[i], err)
+					}
+
+					fieldValue.SetInt(int64(intArg))
+					i++
+				default:
+					return command, posArgs, fmt.Errorf("arg '%v': unsupported field type %v", args[i], fieldValue.Type())
+				}
+				isSet = true
+				break
+			}
+		}
+
+		if !isSet {
+			posArgs = append(posArgs, args[i])
+		}
+	}
+
+	return command, posArgs, nil
 }
 
 func optsParse(args []string, opts any) ([]string, error) {
@@ -21,7 +103,6 @@ func optsParse(args []string, opts any) ([]string, error) {
 	for i := 1; i < len(args); i++ {
 		isSet := false
 
-	outOpts:
 		for j := 0; j < optsStructType.NumField(); j++ {
 			field := optsStructType.Field(j)
 			flag, ok := field.Tag.Lookup("long")
@@ -65,7 +146,7 @@ func optsParse(args []string, opts any) ([]string, error) {
 					return []string{}, fmt.Errorf("arg '%v': unsupported field type %v", args[i], fieldValue.Type())
 				}
 				isSet = true
-				break outOpts
+				break
 			} else if strings.HasPrefix(args[i], "--"+flag+"=") || (shortExists && strings.HasPrefix(args[i], "-"+short+"=")) {
 				argSplit := strings.SplitN(args[i], "=", 2)
 				if len(argSplit) != 2 {
@@ -92,7 +173,7 @@ func optsParse(args []string, opts any) ([]string, error) {
 				}
 
 				isSet = true
-				break outOpts
+				break
 			}
 		}
 

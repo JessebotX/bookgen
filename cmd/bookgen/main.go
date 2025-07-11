@@ -25,41 +25,41 @@ type FlagOpts struct {
 	NoNonEssentialOutput bool   `long:"no-non-essential-output" short:"q" desc:"Prevent printing non-error messages into stdout/stderr"`
 }
 
+type HelpOpts struct {
+	Man bool `long:"man" desc:"Print man-page"`
+}
+
 func main() {
 	// ---
 	// Read CLI arguments
 	// ---
-
-	// These commands are defined here merely for printing help
-	// information.
-	helpCommand := CommandInfo{
-		Name:        "help",
-		Description: "Print help/usage information",
-	}
-	versionCommand := CommandInfo{
-		Name:        "version",
-		Description: "Print program version",
-	}
-	buildCommand := CommandInfo{
-		Name:        "build",
-		Description: "Build source files for distribution",
-	}
-
 	var opts FlagOpts
-	commands := []CommandInfo{buildCommand, helpCommand, versionCommand}
-
 	positionalArgs, err := optsParse(os.Args, &opts)
 	if err != nil {
 		errorExit(1, err.Error())
 	}
 
+	var helpOpts HelpOpts
+	helpCommand, _, err := optsParseSubcommand(positionalArgs, &helpOpts, "help", "print help info")
+	if err != nil {
+		errorExit(1, err.Error())
+	}
+
+	versionCommand, _, err := optsParseSubcommand(positionalArgs, nil, "version", "print application version")
+	if err != nil {
+		errorExit(1, err.Error())
+	}
+
+	buildCommand, _, err := optsParseSubcommand(positionalArgs, nil, "build", "build source files for distribution")
+	if err != nil {
+		errorExit(1, err.Error())
+	}
+
+	commands := []CommandInfo{buildCommand, helpCommand, versionCommand}
+
 	// ---
 	// Set defaults
 	// ---
-	if len(positionalArgs) == 0 {
-		positionalArgs = append(positionalArgs, buildCommand.Name)
-	}
-
 	EnablePlainOutput = opts.PlainOutput
 
 	// Default output directory is relative to the input directory.
@@ -75,15 +75,17 @@ func main() {
 	// ---
 	// Parse collection
 	// ---
-
-	// help and version commands/flags
-	if opts.Help || positionalArgs[0] == helpCommand.Name {
-		optsPrintHelp(&opts, commands)
+	if opts.Help || helpCommand.IsSet {
+		if helpOpts.Man {
+			fmt.Println("TODO: gen and print man page")
+		} else {
+			optsPrintHelp(&opts, commands)
+		}
 		os.Exit(0)
-	} else if opts.Version || positionalArgs[0] == versionCommand.Name {
+	} else if opts.Version || versionCommand.IsSet {
 		fmt.Printf("bookgen version %v %v/%v\n", Version, runtime.GOOS, runtime.GOARCH)
 		os.Exit(0)
-	} else if positionalArgs[0] == buildCommand.Name {
+	} else if buildCommand.IsSet {
 		totalTimeStart := time.Now()
 
 		decodeTimeStart := time.Now()
@@ -116,7 +118,7 @@ func main() {
 			fmt.Printf(terminalPrintBold("Done")+" (%v)\n", totalTimeElapsed)
 		}
 	} else {
-		errorExit(1, "unrecognized command `%v`. See `%v --help` for more information", positionalArgs[0], os.Args[0])
+		errorExit(1, "unrecognized command. See `%v --help` for more information", os.Args[0])
 	}
 }
 
