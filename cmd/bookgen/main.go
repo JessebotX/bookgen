@@ -15,7 +15,7 @@ var (
 	EnablePlainOutput = false
 )
 
-type FlagOpts struct {
+type GlobalOpts struct {
 	Help                 bool   `long:"help" short:"h" desc:"Print help/usage information"`
 	Version              bool   `long:"version" short:"v" desc:"Print program version"`
 	InputDirectory       string `long:"input-directory" short:"i" desc:"Directory containing source files with a bookgen.yml"`
@@ -33,7 +33,7 @@ func main() {
 	// ---
 	// Read CLI arguments
 	// ---
-	var opts FlagOpts
+	var opts GlobalOpts
 	positionalArgs, err := optsParse(os.Args, &opts)
 	if err != nil {
 		errorExit(1, err.Error())
@@ -54,7 +54,6 @@ func main() {
 	if err != nil {
 		errorExit(1, err.Error())
 	}
-
 	commands := []CommandInfo{buildCommand, helpCommand, versionCommand}
 
 	// ---
