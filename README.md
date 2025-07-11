@@ -8,14 +8,15 @@ A static site generator designed for a collection of Markdown-based books.
 
 ## TODO
 
+- [ ] Minify static files (CSS, JS, SVG)
 - [ ] RSS feed
 - [ ] EPUB
-- [ ] Book search indexes
 - [ ] Init command
 - [ ] Default template
 - [ ] General program documentation
 - [ ] Unix man-page generation
 - [ ] Development server with dev/serve command
+- [ ] Book search indexes
 
 ## License/Permissions
 
