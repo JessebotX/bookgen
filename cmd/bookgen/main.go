@@ -15,81 +15,64 @@ var (
 	EnablePlainOutput = false
 )
 
-type GlobalOpts struct {
-	Help                 bool   `long:"help" short:"h" desc:"Print help/usage information"`
-	Version              bool   `long:"version" short:"v" desc:"Print program version"`
-	InputDirectory       string `long:"input-directory" short:"i" desc:"Directory containing source files with a bookgen.yml"`
-	OutputDirectory      string `long:"output-directory" short:"o" desc:"Directory to output distributable files"`
-	Minify               bool   `long:"minify" desc:"Minify output/distributable files"`
-	PlainOutput          bool   `long:"plain" desc:"Remove terminal escape codes from printing into stdout/stderr"`
-	NoNonEssentialOutput bool   `long:"no-non-essential-output" short:"q" desc:"Prevent printing non-error messages into stdout/stderr"`
+type Opts struct {
+	Help                 bool      `long:"help" short:"h" desc:"Print help/usage information"`
+	Version              bool      `long:"version" short:"v" desc:"Print program version"`
+	PlainOutput          bool      `long:"plain" desc:"Remove terminal escape codes from printing into stdout/stderr"`
+	NoNonEssentialOutput bool      `long:"no-non-essential-output" short:"q" desc:"Prevent printing non-error messages into stdout/stderr"`
+	BuildCommand         BuildOpts `subcommand:"build" desc:"build source files"`
 }
 
-type HelpOpts struct {
-	Man bool `long:"man" desc:"Print man-page"`
+type BuildOpts struct {
+	Minify          bool   `long:"minify" desc:"Minify output/distributable files"`
+	InputDirectory  string `long:"input-directory" short:"i" desc:"Directory containing source files with a bookgen.yml"`
+	OutputDirectory string `long:"output-directory" short:"o" desc:"Directory to output distributable files"`
 }
 
 func main() {
 	// ---
 	// Read CLI arguments
 	// ---
-	var opts GlobalOpts
-	positionalArgs, err := optsParse(os.Args, &opts)
+	var opts Opts
+	command, _, err := OptsParse(&opts, os.Args)
 	if err != nil {
 		errorExit(1, err.Error())
 	}
-
-	var helpOpts HelpOpts
-	helpCommand, _, err := optsParseSubcommand(positionalArgs, &helpOpts, "help", "print help info")
-	if err != nil {
-		errorExit(1, err.Error())
-	}
-
-	versionCommand, _, err := optsParseSubcommand(positionalArgs, nil, "version", "print application version")
-	if err != nil {
-		errorExit(1, err.Error())
-	}
-
-	buildCommand, _, err := optsParseSubcommand(positionalArgs, nil, "build", "build source files for distribution")
-	if err != nil {
-		errorExit(1, err.Error())
-	}
-	commands := []CommandInfo{buildCommand, helpCommand, versionCommand}
 
 	// ---
 	// Set defaults
 	// ---
 	EnablePlainOutput = opts.PlainOutput
 
-	// Default output directory is relative to the input directory.
-	if opts.OutputDirectory == "" {
-		opts.OutputDirectory = filepath.Join(opts.InputDirectory, "out")
-	}
-
-	// output dir cannot be == input dir
-	if filepath.Clean(opts.InputDirectory) == filepath.Clean(opts.OutputDirectory) {
-		errorExit(1, "output directory cannot be equal to the working/input directory (`%s` and `%s` are the same).", opts.InputDirectory, opts.OutputDirectory)
-	}
-
 	// ---
 	// Parse collection
 	// ---
-	if opts.Help || helpCommand.IsSet {
-		if helpOpts.Man {
-			fmt.Println("TODO: gen and print man page")
-		} else {
-			optsPrintHelp(&opts, commands)
-		}
+	if opts.Help {
+		//optsPrintHelp(&opts, commands)
+		fmt.Println("TODO: help")
 		os.Exit(0)
-	} else if opts.Version || versionCommand.IsSet {
+	} else if opts.Version {
 		fmt.Printf("bookgen version %v %v/%v\n", Version, runtime.GOOS, runtime.GOARCH)
 		os.Exit(0)
-	} else if buildCommand.IsSet {
-		totalTimeStart := time.Now()
+	} else if command == "build" {
+		inputDirectory := opts.BuildCommand.InputDirectory
+		outputDirectory := opts.BuildCommand.OutputDirectory
+		enableMinify := opts.BuildCommand.Minify
 
+		// Default output directory is relative to the input directory.
+		if outputDirectory == "" {
+			outputDirectory = filepath.Join(inputDirectory, "out")
+		}
+
+		// output dir cannot be == input dir
+		if filepath.Clean(inputDirectory) == filepath.Clean(outputDirectory) {
+			errorExit(1, "output directory cannot be equal to the working/input directory (`%s` and `%s` are the same).", inputDirectory, outputDirectory)
+		}
+
+		totalTimeStart := time.Now()
 		decodeTimeStart := time.Now()
 
-		collection, err := bookgen.DecodeCollection(opts.InputDirectory)
+		collection, err := bookgen.DecodeCollection(inputDirectory)
 		if err != nil {
 			errorExit(1, err.Error())
 		}
@@ -102,7 +85,7 @@ func main() {
 
 		renderTimeStart := time.Now()
 
-		if err := RenderCollectionToWebsite(&collection, opts.InputDirectory, opts.OutputDirectory, opts.Minify); err != nil {
+		if err := RenderCollectionToWebsite(&collection, inputDirectory, outputDirectory, enableMinify); err != nil {
 			errorExit(1, err.Error())
 		}
 
