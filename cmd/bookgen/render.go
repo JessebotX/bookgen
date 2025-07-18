@@ -56,7 +56,7 @@ func RenderCollectionToWebsite(c *bookgen.Collection, workingDir, outputDir stri
 		"_book.html",
 		"_chapter.html",
 	}, []string{
-		"_*_t.html",
+		"_template_*.html",
 	}); err != nil {
 		return fmt.Errorf("failed to copy files to output. %w", err)
 	}
@@ -65,7 +65,7 @@ func RenderCollectionToWebsite(c *bookgen.Collection, workingDir, outputDir stri
 	// Read templates
 	// ---
 	templateFileNames := []string{collectionTemplatePath}
-	fileNames, err := filepath.Glob(filepath.Join(layoutsDir, "_*_t.html"))
+	fileNames, err := filepath.Glob(filepath.Join(layoutsDir, "_template_*.html"))
 	if err == nil {
 		templateFileNames = append(templateFileNames, fileNames...)
 	}
@@ -115,7 +115,7 @@ func RenderCollectionToWebsite(c *bookgen.Collection, workingDir, outputDir stri
 	// TODO: epub generation
 	for _, book := range c.Books {
 		bookWorkingDir := filepath.Join(workingDir, "books", book.PageName)
-		bookOutputDir := filepath.Join(outputDir, book.PageName)
+		bookOutputDir := filepath.Join(outputDir, "books", book.PageName)
 		if err := os.MkdirAll(bookOutputDir, DirPerms); err != nil {
 			return fmt.Errorf("failed to create book `%v` directory. %w", book.PageName, err)
 		}

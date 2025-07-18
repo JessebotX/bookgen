@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	Version           = "0.9.1"
+	Version           = "0.10.0"
 	EnablePlainOutput = false
 )
 

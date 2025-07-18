@@ -30,18 +30,19 @@ import (
 )
 
 var (
-	markdownToHTML = goldmark.New(
-		goldmark.WithExtensions(
-			highlighting.NewHighlighting(
-				highlighting.WithFormatOptions(
-					chromahtml.WithLineNumbers(true),
-				),
+	goldmarkExtensions = goldmark.WithExtensions(
+		highlighting.NewHighlighting(
+			highlighting.WithFormatOptions(
+				chromahtml.WithLineNumbers(true),
 			),
-			meta.Meta,
-			extension.GFM,
-			extension.Footnote,
-			extension.Typographer,
 		),
+		meta.Meta,
+		extension.GFM,
+		extension.Footnote,
+		extension.Typographer,
+	)
+	markdownToHTML = goldmark.New(
+		goldmarkExtensions,
 		goldmark.WithParserOptions(
 			parser.WithAttribute(),
 			parser.WithAutoHeadingID(),
@@ -49,17 +50,7 @@ var (
 		goldmark.WithRendererOptions(),
 	)
 	markdownToXHTML = goldmark.New(
-		goldmark.WithExtensions(
-			highlighting.NewHighlighting(
-				highlighting.WithFormatOptions(
-					chromahtml.WithLineNumbers(true),
-				),
-			),
-			meta.Meta,
-			extension.GFM,
-			extension.Footnote,
-			extension.Typographer,
-		),
+		goldmarkExtensions,
 		goldmark.WithParserOptions(
 			parser.WithAttribute(),
 			parser.WithAutoHeadingID(),
