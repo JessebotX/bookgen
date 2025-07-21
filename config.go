@@ -11,7 +11,7 @@ import (
 
 var (
 	// Valid fields for Book.Status (case-insensitive).
-	BookStatusValidValues = []string{"completed", "hiatus", "ongoing"}
+	BookStatusValidValues = []string{"completed", "hiatus", "ongoing", "inactive"}
 )
 
 // Author represents an individual writer or contributor of an original work.
@@ -31,7 +31,8 @@ type Content struct {
 // Internal represents the app's settings that may be useful
 // for themes to know about.
 type Internal struct {
-	GenerateEPUB bool
+	GenerateEPUB     bool
+	LayoutsDirectory string
 }
 
 // Series represent a set of books that are related to each other,
@@ -67,6 +68,7 @@ func (c *Collection) InitializeDefaults() {
 	c.Title = "My Writing"
 	c.ConfigFormatVersion = 0
 	c.Internal.GenerateEPUB = true
+	c.Internal.LayoutsDirectory = "layouts"
 }
 
 // Close properly deallocates elements in the Collection object such
@@ -129,6 +131,7 @@ func (b *Book) InitializeDefaults(workingDir string, parent *Collection) {
 	b.IsStub = false
 	b.Status = "completed"
 	b.Internal.GenerateEPUB = true
+	b.Internal.LayoutsDirectory = "layouts"
 
 	if parent != nil {
 		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB

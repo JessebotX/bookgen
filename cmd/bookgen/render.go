@@ -39,7 +39,7 @@ func RenderCollectionToWebsite(c *bookgen.Collection, workingDir, outputDir stri
 	globalMinifier.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
 	globalMinifier.AddFunc("image/svg+xml", svg.Minify)
 
-	layoutsDir := filepath.Join(workingDir, "layouts")
+	layoutsDir := filepath.Join(workingDir, c.Internal.LayoutsDirectory)
 	collectionTemplatePath := filepath.Join(layoutsDir, "index.html")
 	bookTemplatePath := filepath.Join(layoutsDir, "_book.html")
 	chapterTemplatePath := filepath.Join(layoutsDir, "_chapter.html")
