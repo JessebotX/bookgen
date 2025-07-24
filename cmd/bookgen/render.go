@@ -137,8 +137,13 @@ func RenderCollectionToWebsite(c *bookgen.Collection, workingDir, outputDir stri
 			}
 		}
 
+		// Render chapters and RSS feed
 		g := new(errgroup.Group)
 		g.Go(func() error {
+			if err := renderBookRSS(bookOutputDir, &book); err != nil {
+				return err
+			}
+
 			if err := renderBookChapters(book.Chapters, chapterTemplate, chapterTemplatePath, bookOutputDir, enableMinify); err != nil {
 				return err
 			}
@@ -267,3 +272,74 @@ func minifyFileHTML(path string, f *os.File) error {
 
 	return nil
 }
+
+func renderBookRSS(bookOutputDir string, b *bookgen.Book) error {
+	rssPath := filepath.Join(bookOutputDir, "rss.xml")
+	f, err := os.Create(rssPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// TODO: support date & time
+	if _, err := f.Write([]byte(`
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+<title>` + b.Title + `</title>
+<link>` + filepath.Join(b.BaseURL, "index.html") + `</link>
+<description>Recent content for ` + b.Title + `</description>
+<generator>` + `bookgen -- github.com/JessebotX/bookgen` + `</generator>
+<language>` + b.LanguageCode + `</language>`)); err != nil {
+		return err
+	}
+
+	for _, c := range b.Chapters {
+		chapterLink := filepath.Join(b.BaseURL, c.PageName+".html")
+		if _, err := f.Write([]byte(`
+<item>
+<title>` + c.Title + `</title>
+<link>` + chapterLink + `</link>
+<guid>` + chapterLink + `</guid>
+<description>` + string(c.Content.XHTML) + `</description>
+</item>`)); err != nil {
+			return err
+		}
+
+	}
+
+	if _, err := f.Write([]byte(`</channel></rss>`)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/*
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+	<title>{{ .Site.Title }}</title>
+	<link>{{ .Permalink }}</link>
+	<description>Recent content {{ if ne  .Title  .Site.Title }}{{ with .Title }}in {{.}} {{ end }}{{ end }}on {{ .Site.Title }}</description>
+	<generator>Hugo -- gohugo.io</generator>{{ with .Site.LanguageCode }}
+	<language>{{.}}</language>{{end}}{{ with .Site.Author.email }}
+	<managingEditor>{{.}}{{ with $.Site.Author.name }} ({{.}}){{end}}</managingEditor>{{end}}{{ with .Site.Author.email }}
+	<webMaster>{{.}}{{ with $.Site.Author.name }} ({{.}}){{end}}</webMaster>{{end}}{{ with .Site.Copyright }}
+	<copyright>{{.}}</copyright>{{end}}{{ if not .Date.IsZero }}
+	<lastBuildDate>{{ .Date.Format "Mon, 02 Jan 2006 15:04:05 -0700" | safeHTML }}</lastBuildDate>{{ end }}
+    {{ with .OutputFormats.Get "RSS" }}
+        {{ printf "<atom:link href=%q rel=\"self\" type=%q />" .Permalink .MediaType | safeHTML }}
+	{{ end }}
+	{{ range .Site.RegularPages }}
+	<item>
+		<title>{{ .Title }}</title>
+		<link>{{ .Permalink }}</link>
+		<pubDate>{{ .Date.Format "Mon, 02 Jan 2006 15:04:05 -0700" | safeHTML }}</pubDate>
+		{{ with .Site.Author.email }}<author>{{.}}{{ with $.Site.Author.name }} ({{.}}){{end}}</author>{{end}}
+		<guid>{{ .Permalink }}</guid>
+		<description>{{- .Content | html -}}</description>
+	</item>
+	{{ end }}
+	</channel>
+</rss>
+}
+*/

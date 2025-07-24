@@ -175,6 +175,12 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	}
 	b.Content.HTML = contentHTML
 
+	contentXHTML, _, err := convertmarkdownToHTML(rawMarkdown, true)
+	if err != nil {
+		return b, fmt.Errorf("book `%v`: failed to convert markdown to XHTML. %w", b.PageName, err)
+	}
+	b.Content.XHTML = contentXHTML
+
 	datePubParam, ok := b.Params["published"]
 	if ok && b.DatePublished.IsZero() {
 		b.DatePublished, err = getTimeFromParam(datePubParam)

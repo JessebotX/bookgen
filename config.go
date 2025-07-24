@@ -103,6 +103,7 @@ type Book struct {
 	Parent           *Collection
 	Internal         Internal
 	PageName         string
+	BaseURL          string
 	Title            string
 	Subtitle         string
 	TitleSort        string
@@ -132,8 +133,10 @@ func (b *Book) InitializeDefaults(workingDir string, parent *Collection) {
 	b.Status = "completed"
 	b.Internal.GenerateEPUB = true
 	b.Internal.LayoutsDirectory = "layouts"
+	b.LanguageCode = "en"
 
 	if parent != nil {
+		b.BaseURL = filepath.Join(parent.BaseURL, "books", b.PageName)
 		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB
 
 		if strings.TrimSpace(parent.LanguageCode) != "" {
