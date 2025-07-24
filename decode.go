@@ -169,17 +169,11 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 	}
 	b.Content.Raw = string(rawMarkdown)
 
-	contentHTML, _, err := convertmarkdownToHTML(rawMarkdown, false)
+	contentHTML, _, err := convertMarkdownToHTML(rawMarkdown, false)
 	if err != nil {
 		return b, fmt.Errorf("book `%v`: failed to convert markdown to HTML. %w", b.PageName, err)
 	}
 	b.Content.HTML = contentHTML
-
-	contentXHTML, _, err := convertmarkdownToHTML(rawMarkdown, true)
-	if err != nil {
-		return b, fmt.Errorf("book `%v`: failed to convert markdown to XHTML. %w", b.PageName, err)
-	}
-	b.Content.XHTML = contentXHTML
 
 	datePubParam, ok := b.Params["published"]
 	if ok && b.DatePublished.IsZero() {
@@ -274,7 +268,7 @@ func DecodeChapter(path string, parent *Book) (Chapter, error) {
 	}
 
 	c.Content.Raw = string(rawMarkdown)
-	contentHTML, metadata, err := convertmarkdownToHTML(rawMarkdown, false)
+	contentHTML, metadata, err := convertMarkdownToHTML(rawMarkdown, false)
 	if err != nil {
 		return c, fmt.Errorf("chapter `%v`: failed to convert markdown to HTML. %w", c.PageName, err)
 	}
@@ -349,7 +343,7 @@ func stringToTime(sTime string) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("date string `%v` does not match any of the following formats:\n%w", sTime, errs)
 }
 
-func convertmarkdownToHTML(content []byte, useXHTML bool) (template.HTML, map[string]any, error) {
+func convertMarkdownToHTML(content []byte, useXHTML bool) (template.HTML, map[string]any, error) {
 	var buffer bytes.Buffer
 	context := parser.NewContext()
 
