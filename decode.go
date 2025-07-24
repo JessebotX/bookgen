@@ -206,6 +206,8 @@ func DecodeBook(workingDir string, parent *Collection) (Book, error) {
 		}
 	}
 
+	// Here chapters can be appended out-of-order because it will
+	// be sorted manually later.
 	g := new(errgroup.Group)
 	b.Chapters = make([]Chapter, 0)
 	for _, item := range items {
