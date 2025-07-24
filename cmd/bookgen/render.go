@@ -295,40 +295,32 @@ func renderBookRSS(bookOutputDir string, b *bookgen.Book) error {
 		return err
 	}
 
-	g := new(errgroup.Group)
 	for _, c := range b.Chapters {
 		chapterLink := filepath.Join(b.BaseURL, c.PageName+".html")
 
-		g.Go(func() error {
-			if _, err := f.Write([]byte(`
+		if _, err := f.Write([]byte(`
 <item>
 <title>` + c.Title + `</title>
 <link>` + chapterLink + `</link>
 <guid>` + chapterLink + `</guid>
 <description>` + c.Title + ` now published @ ` + chapterLink + `</description>`)); err != nil {
-				return err
-			}
+			return err
+		}
 
-			if !c.DatePublished.IsZero() {
-				chapterDate := c.DatePublished.Format("Mon, 02 Jan 2006 15:04:05 -0700")
+		if !c.DatePublished.IsZero() {
+			chapterDate := c.DatePublished.Format("Mon, 02 Jan 2006 15:04:05 -0700")
 
-				if _, err := f.Write([]byte(`
+			if _, err := f.Write([]byte(`
 <pubDate>` + chapterDate + `</pubDate>
 `)); err != nil {
-					return err
-				}
-			}
-
-			if _, err := f.Write([]byte(`</item>`)); err != nil {
 				return err
 			}
+		}
 
-			return nil
-		})
-	}
+		if _, err := f.Write([]byte(`</item>`)); err != nil {
+			return err
+		}
 
-	if err := g.Wait(); err != nil {
-		return err
 	}
 
 	if _, err := f.Write([]byte(`</channel></rss>`)); err != nil {
