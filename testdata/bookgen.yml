@@ -1,3 +1,4 @@
 title: Example Collection Title
+baseURL: https://example.com/&
 internal:
   layoutsDirectory: layouts-2

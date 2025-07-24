@@ -1,5 +1,6 @@
 ---
-title: Chapter 1_1
+title: Chapter \"1_1\"
+date: "2025-05-16 2:05-07:00"
 ---
 
 # miniaudio.h 2
