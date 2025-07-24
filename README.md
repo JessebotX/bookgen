@@ -9,7 +9,7 @@ A static site generator designed for a collection of Markdown-based books.
 ## TODO
 
 - [ ] Minify static files (CSS, JS, SVG)
-- [ ] RSS feed
+- [X] RSS feed
 - [ ] EPUB
 - [ ] Init command
 - [ ] Default template
