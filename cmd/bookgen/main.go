@@ -48,8 +48,7 @@ func main() {
 	// Parse collection
 	// ---
 	if opts.Help {
-		//optsPrintHelp(&opts, commands)
-		fmt.Println("TODO: help")
+		OptsWriteHelp(os.Stdout, &opts)
 		os.Exit(0)
 	} else if opts.Version {
 		fmt.Printf("bookgen version %v %v/%v\n", Version, runtime.GOOS, runtime.GOARCH)

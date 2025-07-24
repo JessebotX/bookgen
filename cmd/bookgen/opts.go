@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"reflect"
 	"strconv"
 	"strings"
@@ -118,6 +119,95 @@ func OptsParseHelper(opts any, args []string, returnConsumedArgs bool) (string, 
 		}
 
 		return command, newPosArgs, nil
+	}
+}
+
+func OptsWriteHelp(w io.Writer, opts any) {
+	indentSize := 4
+	indentLevel1 := 1
+	indentLevel2 := 3
+
+	fmt.Fprintf(w, "USAGE\n")
+
+	for range indentSize * indentLevel1 {
+		fmt.Fprintf(w, " ")
+	}
+
+	// TODO: dont hardcode this
+	fmt.Fprintf(w, "bookgen <command> [flags...]\n")
+
+	fmt.Fprintf(w, "\n")
+
+	reflectValue := reflect.ValueOf(opts).Elem()
+	reflectType := reflect.TypeOf(opts).Elem()
+
+	// TODO: support printing subcommand specific help
+	fmt.Fprintf(w, "COMMANDS\n")
+	for i := 0; i < reflectType.NumField(); i++ {
+		field := reflectType.Field(i)
+
+		subcommand, ok := field.Tag.Lookup("subcommand")
+		if !ok {
+			continue
+		}
+
+		for range indentSize * indentLevel1 {
+			fmt.Fprintf(w, " ")
+		}
+
+		fmt.Fprintf(w, "%s\n", subcommand)
+
+		description, ok := field.Tag.Lookup("desc")
+		if !ok {
+			continue
+		}
+
+		for range indentSize * indentLevel2 {
+			fmt.Fprintf(w, " ")
+		}
+		fmt.Fprintf(w, "%s\n", description)
+	}
+
+	fmt.Fprintf(w, "\n")
+
+	fmt.Fprintf(w, "FLAGS\n")
+
+	for i := 0; i < reflectType.NumField(); i++ {
+		field := reflectType.Field(i)
+		long, ok := field.Tag.Lookup("long")
+		if !ok {
+			continue
+		}
+
+		for range indentSize * indentLevel1 {
+			fmt.Fprintf(w, " ")
+		}
+
+		short, ok := field.Tag.Lookup("short")
+		if ok {
+			fmt.Fprintf(w, "-%s, ", short)
+		} else {
+			fmt.Fprintf(w, "    ")
+		}
+
+		fieldKind := reflectValue.FieldByName(field.Name).Kind()
+		switch fieldKind {
+		case reflect.Bool:
+			fmt.Fprintf(w, "--%s\n", long)
+		default:
+			fmt.Fprintf(w, "--%s <value>\n", long)
+		}
+
+		description, ok := field.Tag.Lookup("desc")
+		if !ok {
+			continue
+		}
+
+		for range indentSize * indentLevel2 {
+			fmt.Fprintf(w, " ")
+		}
+
+		fmt.Fprintf(w, "%s\n", description)
 	}
 }
 
