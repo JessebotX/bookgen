@@ -2,6 +2,8 @@ package mkpub
 
 import (
 	"html/template"
+	"net/url"
+	"strings"
 	"time"
 )
 
@@ -17,6 +19,12 @@ type Internal struct {
 	GenerateEPUB    bool
 	GenerateRSS     bool
 	LayoutDirectory string
+}
+
+func (i *Internal) Init() {
+	i.GenerateEPUB = true
+	i.GenerateRSS = true
+	i.LayoutDirectory = "layouts"
 }
 
 type Author struct {
@@ -52,6 +60,13 @@ type Collection struct {
 	FaviconImageName string
 }
 
+func (c *Collection) Init(title string) {
+	c.Internal.Init()
+
+	c.Title = title
+	c.LanguageCode = "en"
+}
+
 type Book struct {
 	Params           map[string]any
 	Internal         Internal
@@ -78,6 +93,29 @@ type Book struct {
 	CoverImageName   string
 }
 
+func (b *Book) Init(uniqueID, title string, parent *Collection) {
+	b.Internal.Init()
+
+	b.DatePublished = time.Now()
+	b.DateModified = time.Now()
+
+	b.UniqueID = uniqueID
+	b.Title = title
+	b.TitleSort = title
+	b.LanguageCode = "en"
+
+	if parent != nil {
+		b.Parent = parent
+		b.LanguageCode = parent.LanguageCode
+		b.Internal.GenerateRSS = parent.Internal.GenerateRSS
+		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB
+
+		if strings.TrimSpace(parent.BaseURL) != "" {
+			b.BaseURL, _ = url.JoinPath(parent.BaseURL, "books", uniqueID)
+		}
+	}
+}
+
 type Chapter struct {
 	Params        map[string]any
 	Parent        *Book
@@ -95,4 +133,21 @@ type Chapter struct {
 	Mirrors       []ExternalLink
 	Order         int
 	Draft         bool
+}
+
+func (c *Chapter) Init(uniqueID, title string, parent *Book) {
+	c.Parent = parent
+
+	c.UniqueID = uniqueID
+	c.Title = title
+
+	c.LanguageCode = parent.LanguageCode
+
+	if !parent.DatePublished.IsZero() {
+		c.DatePublished = parent.DatePublished
+	}
+
+	if !parent.DateModified.IsZero() {
+		c.DateModified = parent.DateModified
+	}
 }
