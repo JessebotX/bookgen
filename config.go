@@ -3,6 +3,7 @@ package bookgen
 import (
 	"fmt"
 	"html/template"
+	"net/url"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -136,7 +137,8 @@ func (b *Book) InitializeDefaults(workingDir string, parent *Collection) {
 	b.LanguageCode = "en"
 
 	if parent != nil {
-		b.BaseURL = filepath.Join(parent.BaseURL, "books", b.PageName)
+		b.BaseURL, _ = url.JoinPath(parent.BaseURL, "books", b.PageName)
+
 		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB
 
 		if strings.TrimSpace(parent.LanguageCode) != "" {

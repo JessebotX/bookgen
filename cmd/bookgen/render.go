@@ -1,9 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
+	"html"
 	"html/template"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -14,7 +15,7 @@ import (
 
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
-	"github.com/tdewolff/minify/v2/html"
+	minhtml "github.com/tdewolff/minify/v2/html"
 	"github.com/tdewolff/minify/v2/js"
 	"github.com/tdewolff/minify/v2/svg"
 
@@ -30,7 +31,7 @@ var (
 )
 
 func RenderCollectionToWebsite(c *bookgen.Collection, workingDir, outputDir string, enableMinify bool) error {
-	globalMinifier.Add("text/html", &html.Minifier{
+	globalMinifier.Add("text/html", &minhtml.Minifier{
 		KeepDefaultAttrVals: true,
 		KeepDocumentTags:    true,
 		KeepSpecialComments: true,
@@ -282,47 +283,42 @@ func renderBookRSS(bookOutputDir string, b *bookgen.Book) error {
 	}
 	defer f.Close()
 
-	bookLink, err := escapeString(filepath.Join(b.BaseURL, "index.html"))
+	unescapedBookLink, err := url.JoinPath(b.BaseURL, "index.html")
 	if err != nil {
 		return err
 	}
-	bookTitle, err := escapeString(b.Title)
-	if err != nil {
-		return err
-	}
-	bookLang, err := escapeString(b.LanguageCode)
-	if err != nil {
-		return err
-	}
+	escapedBookLink := unescapedBookLink
+
+	bookTitle := html.EscapeString(b.Title)
+	bookLang := html.EscapeString(b.LanguageCode)
 
 	if _, err := f.Write([]byte(`
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 <channel>
 <title>` + bookTitle + `</title>
-<link>` + bookLink + `</link>
+<link>` + escapedBookLink + `</link>
 <description>Recent content for ` + b.Title + `</description>
 <language>` + bookLang + `</language>
-<atom:link href="` + bookLink + `" rel="self" type="application/rss+xml" />
+<atom:link href="` + escapedBookLink + `" rel="self" type="application/rss+xml" />
 `)); err != nil {
 		return err
 	}
 
 	for _, c := range b.Chapters {
-		chapterLink, err := escapeString(filepath.Join(b.BaseURL, c.PageName+".html"))
+		unescapedChapterLink, err := url.JoinPath(b.BaseURL, c.PageName+".html")
 		if err != nil {
 			return err
 		}
-		chapterTitle, err := escapeString(c.Title)
-		if err != nil {
-			return err
-		}
+		escapedChapterLink := unescapedChapterLink
+
+		chapterTitle := html.EscapeString(c.Title)
 
 		if _, err := f.Write([]byte(`
 <item>
 <title>` + chapterTitle + `</title>
-<link>` + chapterLink + `</link>
-<guid>` + chapterLink + `</guid>
-<description>` + chapterTitle + ` now available @ ` + chapterLink + `</description>`)); err != nil {
+<link>` + escapedChapterLink + `</link>
+<guid>` + escapedChapterLink + `</guid>
+<description>` + chapterTitle + ` now available @ ` + escapedChapterLink + `</description>`)); err != nil {
 			return err
 		}
 
@@ -347,51 +343,4 @@ func renderBookRSS(bookOutputDir string, b *bookgen.Book) error {
 	}
 
 	return nil
-}
-
-// Credit: https://cs.opensource.google/go/x/net/+/refs/tags/v0.42.0:html/escape.go
-// License: https://cs.opensource.google/go/x/net/+/master:LICENSE
-func escapeString(s string) (string, error) {
-	escapedChars := "&'<>\"\r"
-	i := strings.IndexAny(s, escapedChars)
-	if i == -1 {
-		return s, nil
-	}
-
-	var buf bytes.Buffer
-	for i != -1 {
-		if _, err := buf.WriteString(s[:i]); err != nil {
-			return "", err
-		}
-		var esc string
-		switch s[i] {
-		case '&':
-			esc = "&amp;"
-		case '\'':
-			// "&#39;" is shorter than "&apos;" and apos was not in HTML until HTML5.
-			esc = "&#39;"
-		case '<':
-			esc = "&lt;"
-		case '>':
-			esc = "&gt;"
-		case '"':
-			// "&#34;" is shorter than "&quot;".
-			esc = "&#34;"
-		case '\r':
-			esc = "&#13;"
-		default:
-			panic("unrecognized escape character")
-		}
-		s = s[i+1:]
-		if _, err := buf.WriteString(esc); err != nil {
-			return "", err
-		}
-		i = strings.IndexAny(s, escapedChars)
-	}
-	_, err := buf.WriteString(s)
-	if err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
 }
