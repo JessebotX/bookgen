@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	Version           = "0.10.4"
+	Version           = "0.10.5"
 	EnablePlainOutput = false
 )
 
@@ -27,6 +27,10 @@ type BuildOpts struct {
 	Minify          bool   `long:"minify" desc:"Minify output/distributable files"`
 	InputDirectory  string `long:"input-directory" short:"i" desc:"Directory containing source files with a bookgen.yml"`
 	OutputDirectory string `long:"output-directory" short:"o" desc:"Directory to output distributable files"`
+}
+
+type HelpOpts struct {
+	Man bool `long:"man" desc:"Access man-page documentation."`
 }
 
 func main() {
@@ -48,7 +52,13 @@ func main() {
 	// Parse collection
 	// ---
 	if opts.Help {
-		OptsWriteHelp(os.Stdout, &opts)
+		if command == "build" {
+			var buildOpts BuildOpts
+			OptsWriteHelpSubcommand(os.Stdout, &buildOpts, "bookgen build [flags...]")
+		} else {
+			OptsWriteHelp(os.Stdout, &opts, "bookgen <command> [flags...]")
+		}
+
 		os.Exit(0)
 	} else if opts.Version {
 		fmt.Printf("bookgen version %v %v/%v\n", Version, runtime.GOOS, runtime.GOARCH)
