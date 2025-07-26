@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+var BookValidStatusValues = []string{"completed", "hiatus", "inactive", "ongoing"}
+
 type Content struct {
 	Raw []byte
 }
@@ -49,6 +51,7 @@ type Series struct {
 }
 
 type Collection struct {
+	ConfigVersion    int
 	Params           map[string]any
 	Internal         Internal
 	Books            []Book
@@ -60,14 +63,16 @@ type Collection struct {
 	FaviconImageName string
 }
 
-func (c *Collection) Init(title string) {
+func (c *Collection) Init(title, lang string) {
 	c.Internal.Init()
 
+	// Required
 	c.Title = title
-	c.LanguageCode = "en"
+	c.LanguageCode = lang
 }
 
 type Book struct {
+	ConfigVersion    int
 	Params           map[string]any
 	Internal         Internal
 	Parent           *Collection
@@ -78,6 +83,7 @@ type Book struct {
 	Title            string
 	Subtitle         string
 	TitleSort        string
+	Status           string
 	BaseURL          string
 	Description      string
 	LanguageCode     string
@@ -93,20 +99,22 @@ type Book struct {
 	CoverImageName   string
 }
 
-func (b *Book) Init(uniqueID, title string, parent *Collection) {
-	b.Internal.Init()
-
-	b.DatePublished = time.Now()
-	b.DateModified = time.Now()
-
+func (b *Book) Init(parent *Collection, uniqueID, title, lang string) {
+	// Required
 	b.UniqueID = uniqueID
 	b.Title = title
-	b.TitleSort = title
-	b.LanguageCode = "en"
+	b.LanguageCode = lang
 
+	// Defaults
+	b.Internal.Init()
+
+	b.TitleSort = title
+	b.DatePublished = time.Now()
+	b.DateModified = b.DatePublished
+
+	// Inherited from parent
 	if parent != nil {
 		b.Parent = parent
-		b.LanguageCode = parent.LanguageCode
 		b.Internal.GenerateRSS = parent.Internal.GenerateRSS
 		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB
 
@@ -135,19 +143,12 @@ type Chapter struct {
 	Draft         bool
 }
 
-func (c *Chapter) Init(uniqueID, title string, parent *Book) {
+func (c *Chapter) Init(parent *Book, uniqueID, title string) {
+	// Required
 	c.Parent = parent
-
 	c.UniqueID = uniqueID
 	c.Title = title
 
+	// Inherited from parent
 	c.LanguageCode = parent.LanguageCode
-
-	if !parent.DatePublished.IsZero() {
-		c.DatePublished = parent.DatePublished
-	}
-
-	if !parent.DateModified.IsZero() {
-		c.DateModified = parent.DateModified
-	}
 }
