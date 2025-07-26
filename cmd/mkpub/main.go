@@ -6,12 +6,19 @@ import (
 )
 
 type Opts struct {
-	BuildOpts            BuildOpts `subcommand:"build" desc:"Compile source files into distributable output formats."`
-	InitOpts             InitOpts  `subcommand:"init" desc:"Generate directory structure"`
-	Version              bool      `long:"version" short:"v" desc:"Print application version."`
-	NoNonEssentialOutput bool      `long:"no-non-essential-output" short:"q" desc:"Include non-essential messages (e.g. compilation states) when printing to terminal output."`
-	PlainOutput          bool      `long:"plain" desc:"Strip terminal escape codes (e.g. colors, bold fonts) from terminal output." env:"TERM==dumb,NO_COLOR==1"`
+	HelpOpts             HelpOpts    `subcommand:"help" desc:"Print help/usage information."`
+	VersionOpts          VersionOpts `subcommand:"version" desc:"desc:"Print application version."`
+	BuildOpts            BuildOpts   `subcommand:"build" desc:"Compile source files into distributable output formats."`
+	InitOpts             InitOpts    `subcommand:"init" desc:"Generate directory structure."`
+	Help                 bool        `long:"help" short:"h" desc:"Print help/usage information."`
+	Version              bool        `long:"version" short:"v" desc:"Print application version."`
+	NoNonEssentialOutput bool        `long:"no-non-essential-output" short:"q" desc:"Include non-essential messages (e.g. compilation states) when printing to terminal output."`
+	PlainOutput          bool        `long:"plain" desc:"Strip terminal escape codes (e.g. colors, bold fonts) from terminal output." env:"TERM==dumb,NO_COLOR"`
 }
+
+type HelpOpts struct{}
+
+type VersionOpts struct{}
 
 type BuildOpts struct {
 	InputDirectory   string `long:"input-directory" short:"i" desc:"Path to directory containing source files."`
@@ -32,7 +39,7 @@ func main() {
 		return
 	}
 
-	fmt.Println("command:", command)
-	fmt.Println("posArgs:", posArgs)
+	fmt.Printf("command: %s\n", command)
+	fmt.Printf("posArgs: %v\n", posArgs)
 	fmt.Printf("%#v\n", opts)
 }

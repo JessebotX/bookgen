@@ -14,10 +14,13 @@ type Program struct {
 }
 
 func OptsParse(opts any, args []string) (string, []string, error) {
-	var command string
-	var posArgs []string
+	return optsParse(opts, args, false)
+}
 
-	commandsRegistered := 0
+func optsParse(opts any, args []string, getArgsConsumed bool) (string, []string, error) {
+	var command string
+	var consumedArgs []string
+	var posArgs []string
 
 	reflectValue := reflect.ValueOf(opts).Elem()
 	reflectType := reflect.TypeOf(opts).Elem()
@@ -29,36 +32,22 @@ func OptsParse(opts any, args []string) (string, []string, error) {
 			break
 		}
 
-		// Ignored if no commands are registered in the end
-		if strings.EqualFold(args[i], "help") && command == "" {
-			command = "help"
-			continue
-		}
-
-		// Ignored if no commands are registered in the end
-		if strings.EqualFold(args[i], "version") && command == "" {
-			command = "version"
-			continue
-		}
-
 		for j := 0; j < reflectType.NumField(); j++ {
 			field := reflectType.Field(j)
 			fieldValue := reflectValue.FieldByName(field.Name)
 
 			subcommand, isSubcommand := field.Tag.Lookup("subcommand")
-			if isSubcommand {
-				commandsRegistered++
-			}
 
 			if isSubcommand && command == "" && strings.EqualFold(subcommand, args[i]) {
 				command = subcommand
 				subcommandField := fieldValue.Addr().Interface()
 
-				_, _, err := OptsParse(subcommandField, args[i:])
+				_, consumed, err := optsParse(subcommandField, args[i:], true)
 				if err != nil {
 					return command, posArgs, err
 				}
 
+				consumedArgs = consumed
 				isSet = true
 				continue
 			}
@@ -78,12 +67,18 @@ func OptsParse(opts any, args []string) (string, []string, error) {
 				switch fieldValue.Kind() {
 				case reflect.Bool:
 					fieldValue.SetBool(true)
+					if getArgsConsumed {
+						consumedArgs = append(consumedArgs, args[i])
+					}
 				case reflect.String:
 					if (i + 1) >= len(args) {
 						return command, posArgs, fmt.Errorf("flag '%s': missing value argument of type 'string' for flag", args[i])
 					}
 
 					fieldValue.SetString(args[i+1])
+					if getArgsConsumed {
+						consumedArgs = append(consumedArgs, args[i], args[i+1])
+					}
 					i++
 				case reflect.Int:
 					if (i + 1) >= len(args) {
@@ -96,6 +91,9 @@ func OptsParse(opts any, args []string) (string, []string, error) {
 					}
 
 					fieldValue.SetInt(int64(intArg))
+					if getArgsConsumed {
+						consumedArgs = append(consumedArgs, args[i], args[i+1])
+					}
 					i++
 				default:
 					return command, posArgs, fmt.Errorf("flag '%s': unsupported field type %v", args[i], fieldValue.Type())
@@ -110,9 +108,26 @@ func OptsParse(opts any, args []string) (string, []string, error) {
 		}
 	}
 
-	if commandsRegistered == 0 {
-		command = ""
-	}
+	if getArgsConsumed {
+		return command, consumedArgs, nil
+	} else {
+		// essentially do posArgs - consumedArgs to get the actual
+		// positional arguments after reading from subcommands
+		var newPosArgs []string
 
-	return command, posArgs, nil
+		for _, posArg := range posArgs {
+			found := false
+			for _, consumedArg := range consumedArgs {
+				if posArg == consumedArg {
+					found = true
+				}
+			}
+
+			if !found {
+				newPosArgs = append(newPosArgs, posArg)
+			}
+		}
+
+		return command, newPosArgs, nil
+	}
 }
