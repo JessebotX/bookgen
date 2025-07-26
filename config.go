@@ -10,11 +10,8 @@ import (
 var BookValidStatusValues = []string{"completed", "hiatus", "inactive", "ongoing"}
 
 type Content struct {
-	Raw []byte
-}
-
-func (c *Content) HTML() template.HTML {
-	return template.HTML(c.Raw) // TODO: convert c.Raw first
+	Raw  []byte
+	HTML template.HTML
 }
 
 type Internal struct {
