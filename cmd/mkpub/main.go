@@ -6,11 +6,11 @@ import (
 )
 
 type Opts struct {
-	BuildOpts          BuildOpts `subcommand:"build" desc:"Compile source files into distributable output formats."`
-	InitOpts           InitOpts  `subcommand:"init" desc:"Generate directory structure"`
-	Version            bool      `long:"version" short:"v" desc:"Print application version."`
-	NonEssentialOutput bool      `long:"non-essential-output" short:"q=false" desc:"Include non-essential messages (e.g. compilation states) when printing to terminal output."`
-	PlainOutput        bool      `long:"plain" desc:"Strip terminal escape codes (e.g. colors, bold fonts) from terminal output." env:"TERM==dumb,NO_COLOR==1"`
+	BuildOpts            BuildOpts `subcommand:"build" desc:"Compile source files into distributable output formats."`
+	InitOpts             InitOpts  `subcommand:"init" desc:"Generate directory structure"`
+	Version              bool      `long:"version" short:"v" desc:"Print application version."`
+	NoNonEssentialOutput bool      `long:"no-non-essential-output" short:"q" desc:"Include non-essential messages (e.g. compilation states) when printing to terminal output."`
+	PlainOutput          bool      `long:"plain" desc:"Strip terminal escape codes (e.g. colors, bold fonts) from terminal output." env:"TERM==dumb,NO_COLOR==1"`
 }
 
 type BuildOpts struct {
