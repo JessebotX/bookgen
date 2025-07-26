@@ -2,13 +2,15 @@ package main
 
 import (
 	"fmt"
+	"os"
 )
 
 type Opts struct {
 	BuildOpts          BuildOpts `subcommand:"build" desc:"Compile source files into distributable output formats."`
+	InitOpts           InitOpts  `subcommand:"init" desc:"Generate directory structure"`
 	Version            bool      `long:"version" short:"v" desc:"Print application version."`
-	NonEssentialOutput bool      `long:"non-essential-output" short:"q=no" desc:"Include non-essential messages (e.g. compilation states) when printing to terminal output."`
-	PlainOutput        bool      `long:"plain" desc:"Strip terminal escape codes (e.g. colors, bold fonts) from terminal output." env:"TERM==dumb"`
+	NonEssentialOutput bool      `long:"non-essential-output" short:"q=false" desc:"Include non-essential messages (e.g. compilation states) when printing to terminal output."`
+	PlainOutput        bool      `long:"plain" desc:"Strip terminal escape codes (e.g. colors, bold fonts) from terminal output." env:"TERM==dumb,NO_COLOR==1"`
 }
 
 type BuildOpts struct {
@@ -19,8 +21,18 @@ type BuildOpts struct {
 	JSON             bool   `long:"json" desc:"Output distributable contents as JSON instead of static files."`
 }
 
+type InitOpts struct {
+	DryRun bool `long:"dry-run" desc:"Show changes that will happen without actually performing the actions."`
+}
+
 func main() {
 	var opts Opts
-	fmt.Println("Hello, world!")
+	command, posArgs, err := OptsParse(&opts, os.Args)
+	if err != nil {
+		return
+	}
+
+	fmt.Println("command:", command)
+	fmt.Println("posArgs:", posArgs)
 	fmt.Printf("%#v\n", opts)
 }
