@@ -88,11 +88,15 @@ func main() {
 			errExit(1, "command 'help' accepts at most 1 argument.")
 		}
 
-		if len(posArgs) == 1 && posArgs[0] != "build" && posArgs[0] != "init" {
+		if len(posArgs) == 1 && posArgs[0] != "build" && posArgs[0] != "init" && posArgs[0] != "version" && posArgs[0] != "help" {
 			errExit(1, "command 'help' has no information for '%s'.", posArgs[0])
 		}
 
-		OptsWriteHelp(os.Stderr, &Opts, Program, GlobalHelpExamples...)
+		if len(posArgs) == 1 {
+			OptsWriteHelp(os.Stderr, Program.Name, posArgs[0], &Opts, GlobalHelpExamples...)
+		} else {
+			OptsWriteHelp(os.Stderr, Program.Name, "", &Opts, GlobalHelpExamples...)
+		}
 		os.Exit(0)
 	} else if command == "version" || Opts.Version {
 		if len(posArgs) > 0 {

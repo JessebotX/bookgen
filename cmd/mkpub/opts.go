@@ -231,7 +231,7 @@ func optsParseEnv(opts any) error {
 	return nil
 }
 
-func OptsWriteHelp(w io.Writer, opts any, prog ProgramInfo, examples ...HelpExample) error {
+func OptsWriteHelp(w io.Writer, programName, commandName string, opts any, examples ...HelpExample) error {
 	var commands []CommandHelpInfo
 	var flags []FlagHelpInfo
 
@@ -248,6 +248,12 @@ func OptsWriteHelp(w io.Writer, opts any, prog ProgramInfo, examples ...HelpExam
 		// Commands
 		subcommand, ok := field.Tag.Lookup("command")
 		if ok {
+			if strings.EqualFold(subcommand, commandName) {
+				subcommandField := fieldValue.Addr().Interface()
+
+				return OptsWriteHelp(w, programName, commandName, subcommandField)
+			}
+
 			description, ok := field.Tag.Lookup("desc")
 			if !ok {
 				description = ""
@@ -286,8 +292,19 @@ func OptsWriteHelp(w io.Writer, opts any, prog ProgramInfo, examples ...HelpExam
 		flags = append(flags, optsFlag)
 	}
 
+	synopsis := programName
+	if commandName != "" {
+		synopsis += " " + commandName
+	}
+	if len(commands) > 0 {
+		synopsis += " COMMAND"
+	}
+	if len(flags) > 0 {
+		synopsis += " FLAGS..."
+	}
+
 	fmt.Fprintf(w, "USAGE\n")
-	fmt.Fprintf(w, "    %s\n", prog.UsageSynopsis)
+	fmt.Fprintf(w, "    %s\n", synopsis)
 
 	if len(examples) > 0 {
 		fmt.Fprintf(w, "\n")
