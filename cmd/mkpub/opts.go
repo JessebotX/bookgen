@@ -2,28 +2,37 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
 )
 
-type Program struct {
+type ProgramInfo struct {
 	Name          string
 	UsageSynopsis string
 	Description   string
+	Version       string
 }
 
 func OptsParse(opts any, args []string) (string, []string, error) {
-	return optsParse(opts, args, false)
+	return optsParse(opts, args, false, true)
 }
 
-func optsParse(opts any, args []string, getArgsConsumed bool) (string, []string, error) {
+func optsParse(opts any, args []string, getArgsConsumed bool, parseEnv bool) (string, []string, error) {
 	var command string
 	var consumedArgs []string
 	var posArgs []string
 
 	reflectValue := reflect.ValueOf(opts).Elem()
 	reflectType := reflect.TypeOf(opts).Elem()
+
+	if parseEnv {
+		if err := optsParseEnv(opts); err != nil {
+			return command, posArgs, err
+		}
+	}
 
 	for i := 1; i < len(args); i++ {
 		isSet := false
@@ -42,7 +51,7 @@ func optsParse(opts any, args []string, getArgsConsumed bool) (string, []string,
 				command = subcommand
 				subcommandField := fieldValue.Addr().Interface()
 
-				_, consumed, err := optsParse(subcommandField, args[i:], true)
+				_, consumed, err := optsParse(subcommandField, args[i:], true, false)
 				if err != nil {
 					return command, posArgs, err
 				}
@@ -130,4 +139,75 @@ func optsParse(opts any, args []string, getArgsConsumed bool) (string, []string,
 
 		return command, newPosArgs, nil
 	}
+}
+
+func optsParseEnv(opts any) error {
+	reflectValue := reflect.ValueOf(opts).Elem()
+	reflectType := reflect.TypeOf(opts).Elem()
+
+	for i := 0; i < reflectType.NumField(); i++ {
+		field := reflectType.Field(i)
+
+		envTag, ok := field.Tag.Lookup("env")
+		if !ok {
+			continue
+		}
+
+		envs := strings.Split(envTag, ",")
+
+		for _, v := range envs {
+			parsed := strings.SplitN(v, "==", 2)
+
+			fieldValue := reflectValue.FieldByName(field.Name)
+			if !fieldValue.CanSet() {
+				return fmt.Errorf("field '%s' cannot be given a value", field.Name)
+			}
+
+			envValue, envValueExists := os.LookupEnv(parsed[0])
+			if len(parsed) == 2 {
+				if fieldValue.Kind() != reflect.Bool {
+					return fmt.Errorf("field '%s' tag 'env' operator '==' can only be used for fields of type bool (read: '%s')", field.Name, envTag)
+				}
+
+				if envValueExists && envValue == parsed[1] {
+					fieldValue.SetBool(true)
+				} else {
+					fieldValue.SetBool(false)
+				}
+			} else if len(parsed) == 1 {
+				if !envValueExists {
+					continue
+				}
+
+				switch fieldValue.Kind() {
+				case reflect.Bool:
+					if envValue == "" {
+						fieldValue.SetBool(false)
+					} else {
+						fieldValue.SetBool(true)
+					}
+				case reflect.String:
+					fieldValue.SetString(envValue)
+				case reflect.Int:
+					intArg, err := strconv.Atoi(parsed[1])
+					if err != nil {
+						return fmt.Errorf("field '%s': %w", field.Name, err)
+					}
+
+					fieldValue.SetInt(int64(intArg))
+				default:
+					return fmt.Errorf("field '%s' unsupported type '%v'", field.Name, fieldValue.Type())
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func OptsWriteHelp(w io.Writer, opts any, prog ProgramInfo) {
+	_ = opts
+
+	fmt.Fprintf(w, "USAGE\n")
+	fmt.Fprintf(w, "    %s\n", prog.UsageSynopsis)
 }
