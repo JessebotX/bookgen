@@ -231,13 +231,19 @@ func optsParseEnv(opts any) error {
 	return nil
 }
 
-func OptsWriteHelp(w io.Writer, programName, commandName string, opts any, examples ...HelpExample) error {
+func OptsWriteHelp(w io.Writer, opts any, programName, cmdName string, examples ...HelpExample) error {
+	return optsWriteHelp(w, opts, programName, cmdName, "", false, examples...)
+}
+
+func optsWriteHelp(w io.Writer, opts any, programName, cmdName, cmdDescription string, insideSubcommand bool, examples ...HelpExample) error {
+	// ---
+	// Read all commands and flags
+	// ---
 	var commands []CommandHelpInfo
 	var flags []FlagHelpInfo
 
 	reflectType := reflect.TypeOf(opts).Elem()
 	reflectValue := reflect.ValueOf(opts).Elem()
-
 	for i := 0; i < reflectType.NumField(); i++ {
 		field := reflectType.Field(i)
 		fieldValue := reflectValue.FieldByName(field.Name)
@@ -248,15 +254,18 @@ func OptsWriteHelp(w io.Writer, programName, commandName string, opts any, examp
 		// Commands
 		subcommand, ok := field.Tag.Lookup("command")
 		if ok {
-			if strings.EqualFold(subcommand, commandName) {
-				subcommandField := fieldValue.Addr().Interface()
-
-				return OptsWriteHelp(w, programName, commandName, subcommandField)
-			}
-
 			description, ok := field.Tag.Lookup("desc")
 			if !ok {
 				description = ""
+			}
+
+			if strings.EqualFold(subcommand, cmdName) {
+				// ---
+				// Print subcommand help
+				// ---
+				subcommandField := fieldValue.Addr().Interface()
+
+				return optsWriteHelp(w, subcommandField, programName, cmdName, description, true)
 			}
 
 			optsCommand := CommandHelpInfo{
@@ -292,9 +301,28 @@ func OptsWriteHelp(w io.Writer, programName, commandName string, opts any, examp
 		flags = append(flags, optsFlag)
 	}
 
+	// ---
+	// Error for printing help for subcommand that does not exist
+	// ---
+	if !insideSubcommand && cmdName != "" {
+		cmdExists := false
+		for _, command := range commands {
+			if strings.EqualFold(cmdName, command.Name) {
+				cmdExists = true
+			}
+
+			if !cmdExists {
+				return fmt.Errorf("no help/usage information for command '%s'", cmdName)
+			}
+		}
+	}
+
+	// ---
+	// Begin printing
+	// ---
 	synopsis := programName
-	if commandName != "" {
-		synopsis += " " + commandName
+	if cmdName != "" {
+		synopsis += " " + cmdName
 	}
 	if len(commands) > 0 {
 		synopsis += " COMMAND"
@@ -305,6 +333,12 @@ func OptsWriteHelp(w io.Writer, programName, commandName string, opts any, examp
 
 	fmt.Fprintf(w, "USAGE\n")
 	fmt.Fprintf(w, "    %s\n", synopsis)
+
+	if strings.TrimSpace(cmdDescription) != "" {
+		fmt.Fprintf(w, "\n")
+		fmt.Fprintf(w, "DESCRIPTION\n")
+		fmt.Fprintf(w, "    %s\n", cmdDescription)
+	}
 
 	if len(examples) > 0 {
 		fmt.Fprintf(w, "\n")
@@ -359,7 +393,7 @@ func OptsWriteHelp(w io.Writer, programName, commandName string, opts any, examp
 		if f.Long != "" && f.Short != "" {
 			fmt.Fprintf(w, "    -%s, --%s ", f.Short, f.Long)
 		} else if f.Long != "" {
-			fmt.Fprintf(w, "        --%s ", f.Long)
+			fmt.Fprintf(w, "    --%s ", f.Long)
 		} else if f.Short != "" {
 			fmt.Fprintf(w, "    -%s ", f.Short)
 		}
