@@ -37,7 +37,10 @@ type HelpExample struct {
 	Description string
 }
 
-const DescriptionWrapWidth = 62
+const (
+	DescriptionWrapWidth  = 62
+	DescriptionWrapIndent = 10
+)
 
 func OptsParse(opts any, args []string) (string, []string, error) {
 	return optsParse(opts, args, false, true)
@@ -252,7 +255,7 @@ func OptsWriteHelp(w io.Writer, opts any, prog ProgramInfo, examples ...HelpExam
 
 			optsCommand := CommandHelpInfo{
 				Name:        subcommand,
-				Description: strings.TrimSpace(wrapString(description, DescriptionWrapWidth, 10)),
+				Description: strings.TrimSpace(wrapString(description, DescriptionWrapWidth, DescriptionWrapIndent)),
 				Kind:        fieldValue.Kind(),
 			}
 
@@ -277,7 +280,7 @@ func OptsWriteHelp(w io.Writer, opts any, prog ProgramInfo, examples ...HelpExam
 		optsFlag := FlagHelpInfo{
 			Long:        long,
 			Short:       short,
-			Description: strings.TrimSpace(wrapString(description, DescriptionWrapWidth, 10)),
+			Description: strings.TrimSpace(wrapString(description, DescriptionWrapWidth, DescriptionWrapIndent)),
 			Kind:        fieldValue.Kind(),
 		}
 		flags = append(flags, optsFlag)
@@ -292,7 +295,7 @@ func OptsWriteHelp(w io.Writer, opts any, prog ProgramInfo, examples ...HelpExam
 
 		for _, eg := range examples {
 			fmt.Fprintf(w, "    $ %s\n", eg.Usage)
-			fmt.Fprintf(w, "          %s\n", wrapString(eg.Description, DescriptionWrapWidth, 10))
+			fmt.Fprintf(w, "          %s\n", wrapString(eg.Description, DescriptionWrapWidth, DescriptionWrapIndent))
 		}
 	}
 
@@ -308,7 +311,7 @@ func OptsWriteHelp(w io.Writer, opts any, prog ProgramInfo, examples ...HelpExam
 	for _, command := range commands {
 		fmt.Fprintf(w, "    %s\n", command.Name)
 		if command.Description != "" {
-			fmt.Fprintf(w, "          %s\n", wrapString(command.Description, DescriptionWrapWidth, 10))
+			fmt.Fprintf(w, "          %s\n", wrapString(command.Description, DescriptionWrapWidth, DescriptionWrapIndent))
 		}
 	}
 
@@ -356,7 +359,7 @@ func OptsWriteHelp(w io.Writer, opts any, prog ProgramInfo, examples ...HelpExam
 		fmt.Fprintf(w, "\n")
 
 		if f.Description != "" {
-			fmt.Fprintf(w, "          %s\n", wrapString(f.Description, DescriptionWrapWidth, 10))
+			fmt.Fprintf(w, "          %s\n", wrapString(f.Description, DescriptionWrapWidth, DescriptionWrapIndent))
 		}
 	}
 
@@ -425,9 +428,9 @@ func wrapString(s string, lim, indentation uint) string {
 			wordBufLen++
 
 			if current+wordBufLen+spaceBufLen > lim && wordBufLen < lim {
-				buf.WriteRune('\n')
+				buf.WriteByte(byte('\n'))
 				for range indentation {
-					buf.WriteRune(' ')
+					buf.WriteByte(byte(' '))
 				}
 
 				current = 0
