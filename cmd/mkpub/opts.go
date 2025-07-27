@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 type ProgramInfo struct {
@@ -15,6 +18,26 @@ type ProgramInfo struct {
 	Description   string
 	Version       string
 }
+
+type FlagHelpInfo struct {
+	Short       string
+	Long        string
+	Description string
+	Kind        reflect.Kind
+}
+
+type CommandHelpInfo struct {
+	Name        string
+	Description string
+	Kind        reflect.Kind
+}
+
+type HelpExample struct {
+	Usage       string
+	Description string
+}
+
+const DescriptionWrapWidth = 62
 
 func OptsParse(opts any, args []string) (string, []string, error) {
 	return optsParse(opts, args, false, true)
@@ -45,7 +68,7 @@ func optsParse(opts any, args []string, getArgsConsumed bool, parseEnv bool) (st
 			field := reflectType.Field(j)
 			fieldValue := reflectValue.FieldByName(field.Name)
 
-			subcommand, isSubcommand := field.Tag.Lookup("subcommand")
+			subcommand, isSubcommand := field.Tag.Lookup("command")
 
 			if isSubcommand && command == "" && strings.EqualFold(subcommand, args[i]) {
 				command = subcommand
@@ -205,9 +228,223 @@ func optsParseEnv(opts any) error {
 	return nil
 }
 
-func OptsWriteHelp(w io.Writer, opts any, prog ProgramInfo) {
-	_ = opts
+func OptsWriteHelp(w io.Writer, opts any, prog ProgramInfo, examples ...HelpExample) error {
+	var commands []CommandHelpInfo
+	var flags []FlagHelpInfo
+
+	reflectType := reflect.TypeOf(opts).Elem()
+	reflectValue := reflect.ValueOf(opts).Elem()
+
+	for i := 0; i < reflectType.NumField(); i++ {
+		field := reflectType.Field(i)
+		fieldValue := reflectValue.FieldByName(field.Name)
+		if !fieldValue.CanSet() {
+			return fmt.Errorf("field '%s' cannot be given a value", field.Name)
+		}
+
+		// Commands
+		subcommand, ok := field.Tag.Lookup("command")
+		if ok {
+			description, ok := field.Tag.Lookup("desc")
+			if !ok {
+				description = ""
+			}
+
+			optsCommand := CommandHelpInfo{
+				Name:        subcommand,
+				Description: strings.TrimSpace(wrapString(description, DescriptionWrapWidth, 10)),
+				Kind:        fieldValue.Kind(),
+			}
+
+			commands = append(commands, optsCommand)
+
+			continue
+		}
+
+		// Flags
+		long, longExists := field.Tag.Lookup("long")
+		short, shortExists := field.Tag.Lookup("short")
+
+		if !longExists && !shortExists {
+			continue
+		}
+
+		description, ok := field.Tag.Lookup("desc")
+		if !ok {
+			description = ""
+		}
+
+		optsFlag := FlagHelpInfo{
+			Long:        long,
+			Short:       short,
+			Description: strings.TrimSpace(wrapString(description, DescriptionWrapWidth, 10)),
+			Kind:        fieldValue.Kind(),
+		}
+		flags = append(flags, optsFlag)
+	}
 
 	fmt.Fprintf(w, "USAGE\n")
 	fmt.Fprintf(w, "    %s\n", prog.UsageSynopsis)
+
+	if len(examples) > 0 {
+		fmt.Fprintf(w, "\n")
+		fmt.Fprintf(w, "EXAMPLES\n")
+
+		for _, eg := range examples {
+			fmt.Fprintf(w, "    $ %s\n", eg.Usage)
+			fmt.Fprintf(w, "          %s\n", wrapString(eg.Description, DescriptionWrapWidth, 10))
+		}
+	}
+
+	if len(commands) > 0 {
+		fmt.Fprintf(w, "\n")
+		fmt.Fprintf(w, "COMMANDS\n")
+	}
+
+	slices.SortFunc(commands, func(a, b CommandHelpInfo) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	for _, command := range commands {
+		fmt.Fprintf(w, "    %s\n", command.Name)
+		if command.Description != "" {
+			fmt.Fprintf(w, "          %s\n", wrapString(command.Description, DescriptionWrapWidth, 10))
+		}
+	}
+
+	if len(flags) > 0 {
+		fmt.Fprintf(w, "\n")
+		fmt.Fprintf(w, "FLAGS\n")
+	}
+
+	slices.SortFunc(flags, func(a, b FlagHelpInfo) int {
+		if a.Short != "" && b.Short != "" {
+			if n := strings.Compare(a.Short, b.Short); n != 0 {
+				return n
+			}
+		} else if a.Short != "" && b.Short == "" {
+			if n := strings.Compare(a.Short, b.Long); n != 0 {
+				return n
+			}
+		} else if a.Short == "" && b.Short != "" {
+			if n := strings.Compare(a.Long, b.Short); n != 0 {
+				return n
+			}
+		}
+
+		return strings.Compare(a.Long, b.Long)
+	})
+
+	for _, f := range flags {
+		if f.Long != "" && f.Short != "" {
+			fmt.Fprintf(w, "    -%s, --%s ", f.Short, f.Long)
+		} else if f.Long != "" {
+			fmt.Fprintf(w, "        --%s ", f.Long)
+		} else if f.Short != "" {
+			fmt.Fprintf(w, "    -%s ", f.Short)
+		}
+
+		switch f.Kind {
+		case reflect.String:
+			fmt.Fprintf(w, "<TEXT-VALUE>")
+		case reflect.Int:
+			fmt.Fprintf(w, "<INTEGER-VALUE>")
+		default:
+			break
+		}
+
+		fmt.Fprintf(w, "\n")
+
+		if f.Description != "" {
+			fmt.Fprintf(w, "          %s\n", wrapString(f.Description, DescriptionWrapWidth, 10))
+		}
+	}
+
+	return nil
+}
+
+// Credit: <https://github.com/mitchellh/go-wordwrap>
+// License: MIT
+// <https://github.com/mitchellh/go-wordwrap/blob/master/LICENSE.md>
+// (modified by adding indentation param used after newline)
+//
+// wrapString wraps the given string within lim width in characters.
+//
+// Wrapping is currently naive and only happens at white-space. A future
+// version of the library will implement smarter wrapping. This means that
+// pathological cases can dramatically reach past the limit, such as a very
+// long word.
+func wrapString(s string, lim, indentation uint) string {
+	nbsp := rune(0xA0)
+
+	// Initialize a buffer with a slightly larger size to account for breaks
+	init := make([]byte, 0, len(s))
+	buf := bytes.NewBuffer(init)
+
+	var current uint
+	var wordBuf, spaceBuf bytes.Buffer
+	var wordBufLen, spaceBufLen uint
+
+	for _, char := range s {
+		if char == '\n' {
+			if wordBuf.Len() == 0 {
+				if current+spaceBufLen > lim {
+					current = 0
+				} else {
+					current += spaceBufLen
+					spaceBuf.WriteTo(buf)
+				}
+				spaceBuf.Reset()
+				spaceBufLen = 0
+			} else {
+				current += spaceBufLen + wordBufLen
+				spaceBuf.WriteTo(buf)
+				spaceBuf.Reset()
+				spaceBufLen = 0
+				wordBuf.WriteTo(buf)
+				wordBuf.Reset()
+				wordBufLen = 0
+			}
+			buf.WriteRune(char)
+			current = 0
+		} else if unicode.IsSpace(char) && char != nbsp {
+			if spaceBuf.Len() == 0 || wordBuf.Len() > 0 {
+				current += spaceBufLen + wordBufLen
+				spaceBuf.WriteTo(buf)
+				spaceBuf.Reset()
+				spaceBufLen = 0
+				wordBuf.WriteTo(buf)
+				wordBuf.Reset()
+				wordBufLen = 0
+			}
+
+			spaceBuf.WriteRune(char)
+			spaceBufLen++
+		} else {
+			wordBuf.WriteRune(char)
+			wordBufLen++
+
+			if current+wordBufLen+spaceBufLen > lim && wordBufLen < lim {
+				buf.WriteRune('\n')
+				for range indentation {
+					buf.WriteRune(' ')
+				}
+
+				current = 0
+				spaceBuf.Reset()
+				spaceBufLen = 0
+			}
+		}
+	}
+
+	if wordBuf.Len() == 0 {
+		if current+spaceBufLen <= lim {
+			spaceBuf.WriteTo(buf)
+		}
+	} else {
+		spaceBuf.WriteTo(buf)
+		wordBuf.WriteTo(buf)
+	}
+
+	return buf.String()
 }
