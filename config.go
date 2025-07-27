@@ -15,15 +15,13 @@ type Content struct {
 }
 
 type Internal struct {
-	GenerateEPUB    bool
-	GenerateRSS     bool
-	LayoutDirectory string
+	GenerateEPUB bool
+	GenerateRSS  bool
 }
 
 func (i *Internal) Init() {
 	i.GenerateEPUB = true
 	i.GenerateRSS = true
-	i.LayoutDirectory = "layouts"
 }
 
 type Author struct {
