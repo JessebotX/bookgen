@@ -42,18 +42,18 @@ func DecodeCollection(inputDir string) (Collection, error) {
 	}
 
 	if err := mapToStruct(collection.Params, &collection); err != nil {
-		return collection, fmt.Errorf("decode collection '%s': failed to parse config: %w", err)
+		return collection, fmt.Errorf("decode collection '%s': failed to parse config: %w", inputDir, err)
 	}
 
 	// ---
 	// Check requirements
 	// ---
 	if strings.TrimSpace(collection.Title) == "" {
-		return collection, fmt.Errorf("decode collection '%s': collection title is required and cannot be empty/only spaces")
+		return collection, fmt.Errorf("decode collection '%s': collection title is required and cannot be empty/only spaces", inputDir)
 	}
 
 	if strings.TrimSpace(collection.LanguageCode) == "" {
-		return collection, fmt.Errorf("decode collection '%s': collection language code is required and cannot be empty/only spaces")
+		return collection, fmt.Errorf("decode collection '%s': collection language code is required and cannot be empty/only spaces", inputDir)
 	}
 
 	return collection, nil
