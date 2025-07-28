@@ -403,8 +403,6 @@ func optsWriteHelp(w io.Writer, opts any, programName, cmdName, cmdDescription s
 			fmt.Fprintf(w, "<TEXT-VALUE>")
 		case reflect.Int:
 			fmt.Fprintf(w, "<INTEGER-VALUE>")
-		default:
-			break
 		}
 
 		fmt.Fprintf(w, "\n")
