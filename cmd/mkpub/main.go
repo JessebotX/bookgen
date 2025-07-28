@@ -60,23 +60,23 @@ var (
 		Version:       "0.11.0",
 	}
 	GlobalHelpExamples = []HelpExample{
-		HelpExample{
+		{
 			Usage:       Program.Name + " init",
 			Description: "Initialize default project structure for source files.",
 		},
-		HelpExample{
+		{
 			Usage:       Program.Name,
 			Description: "Convert sources in current directory into distributable output formats. Shorthand for 'build' command.",
 		},
-		HelpExample{
+		{
 			Usage:       Program.Name + " build --minify",
 			Description: "Convert sources in current directory to *minified* distributable output formats (minification support depends on format).",
 		},
-		HelpExample{
+		{
 			Usage:       Program.Name + " build -i /path/to/source/dir -o /path/to/output/dir",
 			Description: "Convert sources found in /path/to/source/dir into distributable output formats generated at /path/to/output/dir.",
 		},
-		HelpExample{
+		{
 			Usage:       Program.Name + " help build",
 			Description: "Print help/usage information for subcommand 'build'.",
 		},
