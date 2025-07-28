@@ -38,16 +38,11 @@ func DecodeCollection(inputDir string) (Collection, error) {
 	}
 
 	if err := yaml.Unmarshal(yamlData, &collection.Params); err != nil {
-		return collection, fmt.Errorf("decode collection '%s': %v", inputDir, yaml.FormatError(err, false, true))
+		return collection, fmt.Errorf("decode collection '%s': failed to parse config: %v", inputDir, yaml.FormatError(err, false, true))
 	}
 
-	jsonData, err := json.Marshal(collection.Params)
-	if err != nil {
-		return collection, fmt.Errorf("decode collection '%s': %w", inputDir, err)
-	}
-
-	if err := json.Unmarshal(jsonData, &collection); err != nil {
-		return collection, fmt.Errorf("decode collection '%s': %w", inputDir, err)
+	if err := mapToStruct(collection.Params, &collection); err != nil {
+		return collection, fmt.Errorf("decode collection '%s': failed to parse config: %w", err)
 	}
 
 	// ---
@@ -72,4 +67,17 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	book.InitDefaults(id, collection)
 
 	return book, nil
+}
+
+func mapToStruct(m map[string]any, s any) error {
+	jsonData, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(jsonData, s); err != nil {
+		return err
+	}
+
+	return nil
 }
