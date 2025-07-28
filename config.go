@@ -56,14 +56,14 @@ type Collection struct {
 	LanguageCode     string
 	Content          Content
 	FaviconImageName string
+	LastBuildDate    time.Time
 }
 
-func (c *Collection) Init(title, lang string) {
+func (c *Collection) InitDefaults() {
 	c.Internal.Init()
 
-	// Required
-	c.Title = title
-	c.LanguageCode = lang
+	c.LanguageCode = "en"
+	c.LastBuildDate = time.Now()
 }
 
 type Book struct {
