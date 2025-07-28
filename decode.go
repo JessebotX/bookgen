@@ -90,6 +90,39 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	book.InitDefaults(id, collection)
 
 	// ---
+	// Parse config
+	// ---
+
+	yamlData, err := os.ReadFile(filepath.Join(inputDir, BookConfigName))
+	if err != nil {
+		return book, fmt.Errorf("decode book '%s': failed to read config: %w", inputDir, err)
+	}
+
+	if err := yaml.Unmarshal(yamlData, &book.Params); err != nil {
+		return book, fmt.Errorf("decode book '%s': failed to parse config: %w", inputDir, yaml.FormatError(err, false, true))
+	}
+
+	if err := mapToStruct(book.Params, &book); err != nil {
+		return book, fmt.Errorf("decode book '%s': failed to parse config: %w", inputDir, err)
+	}
+
+	// ---
+	// Check requirements
+	// ---
+
+	if strings.TrimSpace(book.UniqueID) == "" {
+		return book, fmt.Errorf("decode book '%s': book unique ID is required and cannot be empty/only spaces.", inputDir)
+	}
+
+	if strings.TrimSpace(book.Title) == "" {
+		return book, fmt.Errorf("decode book '%s': book title is required and cannot be empty/only spaces.", inputDir)
+	}
+
+	if strings.TrimSpace(book.LanguageCode) == "" {
+		return book, fmt.Errorf("decode book '%s': book language code is required and cannot be empty/only spaces.", inputDir)
+	}
+
+	// ---
 	// Decode chapters
 	// ---
 

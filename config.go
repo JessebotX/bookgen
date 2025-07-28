@@ -72,6 +72,7 @@ type Book struct {
 	Internal         Internal
 	Parent           *Collection
 	UniqueID         string
+	LastBuildDate    time.Time
 	DatePublished    time.Time
 	DateModified     time.Time
 	Chapters         []Chapter
@@ -99,8 +100,7 @@ func (b *Book) InitDefaults(uniqueID string, parent *Collection) {
 	b.Internal.Init()
 
 	b.UniqueID = uniqueID
-	b.DatePublished = time.Now()
-	b.DateModified = b.DatePublished
+	b.LastBuildDate = time.Now()
 
 	// Inherited from parent
 	if parent != nil {
@@ -108,8 +108,8 @@ func (b *Book) InitDefaults(uniqueID string, parent *Collection) {
 		b.Internal.GenerateRSS = parent.Internal.GenerateRSS
 		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB
 
-		if strings.TrimSpace(parent.BaseURL) == "" {
-			b.BaseURL, _ = url.JoinPath(parent.BaseURL, "books")
+		if strings.TrimSpace(parent.BaseURL) != "" {
+			b.BaseURL, _ = url.JoinPath(parent.BaseURL, "books", uniqueID)
 		}
 
 		if strings.TrimSpace(b.LanguageCode) == "" {
