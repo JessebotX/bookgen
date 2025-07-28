@@ -46,7 +46,7 @@ type Series struct {
 }
 
 type Collection struct {
-	ConfigVersion    int
+	ConfigFormat     string
 	Params           map[string]any
 	Internal         Internal
 	Books            []Book
@@ -67,7 +67,7 @@ func (c *Collection) InitDefaults() {
 }
 
 type Book struct {
-	ConfigVersion    int
+	ConfigFormat     string
 	Params           map[string]any
 	Internal         Internal
 	Parent           *Collection
