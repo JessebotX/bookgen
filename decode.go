@@ -99,7 +99,7 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	}
 
 	if err := yaml.Unmarshal(yamlData, &book.Params); err != nil {
-		return book, fmt.Errorf("decode book '%s': failed to parse config: %w", inputDir, yaml.FormatError(err, false, true))
+		return book, fmt.Errorf("decode book '%s': failed to parse config: %v", inputDir, yaml.FormatError(err, false, true))
 	}
 
 	if err := mapToStruct(book.Params, &book); err != nil {
