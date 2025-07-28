@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/JessebotX/mkpub"
@@ -38,18 +37,6 @@ type BuildOpts struct {
 type InitOpts struct {
 	DryRun bool `long:"dry-run" desc:"Show changes that will happen without actually performing the actions."`
 }
-
-const (
-	TerminalClear       = "\033[0m"
-	TerminalTextBold    = "1"
-	TerminalTextRed     = "31"
-	TerminalTextGreen   = "32"
-	TerminalTextYellow  = "33"
-	TerminalTextBlue    = "34"
-	TerminalTextMagenta = "35"
-	TerminalTextCyan    = "36"
-	TerminalTextWhite   = "37"
-)
 
 var (
 	Opts    GlobalOpts
@@ -198,11 +185,9 @@ func errExit(exitCode int, format string, a ...any) {
 }
 
 func terminalStyle(s string, codes ...string) string {
-	if Opts.PlainOutput || len(codes) == 0 {
+	if Opts.PlainOutput {
 		return s
 	}
 
-	code := strings.Join(codes, ";")
-
-	return "\033[" + code + "m" + s + TerminalClear
+	return TerminalStyle(s, codes...)
 }
