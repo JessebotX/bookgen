@@ -2,9 +2,11 @@ package mkpub
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/goccy/go-yaml"
@@ -54,6 +56,17 @@ func DecodeCollection(inputDir string) (Collection, error) {
 
 	if strings.TrimSpace(collection.LanguageCode) == "" {
 		return collection, fmt.Errorf("decode collection '%s': collection language code is required and cannot be empty/only spaces", inputDir)
+	}
+
+	// ---
+	// Further parsing
+	// ---
+	if collection.FaviconImageName != "" {
+		if _, err := os.Stat(filepath.Join(inputDir, collection.FaviconImageName)); errors.Is(err, os.ErrNotExist) {
+			return collection, fmt.Errorf("decode collection '%s': failed to find favicon image '%s' in input directory '%s')", inputDir, filepath.Clean(collection.FaviconImageName), inputDir)
+		} else if err != nil {
+			return collection, fmt.Errorf("decode collection '%s': %w", inputDir, err)
+		}
 	}
 
 	// ---
@@ -125,6 +138,20 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	// ---
 	// Further parsing
 	// ---
+	if book.CoverImageName != "" {
+		if _, err := os.Stat(filepath.Join(inputDir, book.CoverImageName)); errors.Is(err, os.ErrNotExist) {
+			return book, fmt.Errorf("decode book '%s': failed to find cover image '%s' in input directory '%s')", inputDir, filepath.Clean(book.CoverImageName), inputDir)
+		} else if err != nil {
+			return book, fmt.Errorf("decode book '%s': %w", inputDir, err)
+		}
+	}
+
+	if !slices.Contains(BookStatusValues, strings.ToLower(book.Status)) {
+		valid := strings.Join(BookStatusValues, ", ")
+
+		return book, fmt.Errorf("decode book '%s': unrecognized status value '%s'.\nValue must be one of the following: (comma-separated): %s", inputDir, book.Status, valid)
+	}
+
 	rawContentPath := filepath.Join(inputDir, "index.md")
 	rawContent, err := os.ReadFile(rawContentPath)
 	if err != nil {

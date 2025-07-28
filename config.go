@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var BookValidStatusValues = []string{"completed", "hiatus", "inactive", "ongoing"}
+var BookStatusValues = []string{"completed", "hiatus", "inactive", "ongoing"}
 
 type Content struct {
 	Raw  []byte
@@ -101,6 +101,7 @@ func (b *Book) InitDefaults(uniqueID string, parent *Collection) {
 
 	b.UniqueID = uniqueID
 	b.LastBuildDate = time.Now()
+	b.Status = "completed"
 
 	// Inherited from parent
 	if parent != nil {
