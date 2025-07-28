@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -129,6 +130,20 @@ func main() {
 		// Begin build
 		// ---
 		buildTimeStart := time.Now()
+		if !Opts.NoNonEssentialOutput {
+			minificationStatus := strconv.FormatBool(Opts.BuildOpts.Minify)
+			if !Opts.BuildOpts.Minify {
+				minificationStatus += " ('--minify' to enable)"
+			}
+
+			fmt.Println(terminalStyle("Building...", TerminalTextBold, TerminalTextGreen))
+			fmt.Printf("+ Input Directory:     %s\n", inputDir)
+			fmt.Printf("+ Output Directory:    %s\n", outputDir)
+			fmt.Printf("+ Layouts Directory:   %s\n", layoutsDir)
+			fmt.Printf("+ Output minification: %s\n", minificationStatus)
+		}
+
+		// DECODING:
 
 		decodeTimeStart := time.Now()
 		collection, err := mkpub.DecodeCollection(inputDir)
@@ -140,6 +155,20 @@ func main() {
 		if !Opts.NoNonEssentialOutput {
 			fmt.Printf(terminalStyle("Done decoding!", TerminalTextGreen)+" (%v)\n", decodeTimeEnd)
 		}
+
+		// RENDERING:
+
+		renderTimeStart := time.Now()
+
+		// TODO: call render function
+
+		renderTimeEnd := time.Since(renderTimeStart)
+
+		if !Opts.NoNonEssentialOutput {
+			fmt.Printf(terminalStyle("Done rendering!", TerminalTextGreen)+" (%v)\n", renderTimeEnd)
+		}
+
+		// COMPLETED:
 
 		_ = collection
 
