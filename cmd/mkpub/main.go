@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/JessebotX/mkpub"
@@ -19,7 +20,6 @@ type GlobalOpts struct {
 	Version              bool        `long:"version" short:"v" desc:"Print application version."`
 	NoNonEssentialOutput bool        `long:"no-non-essential-output" short:"q" desc:"Include non-essential messages (e.g. compilation states) when printing to terminal output."`
 	PlainOutput          bool        `long:"plain" desc:"Strip terminal escape codes (e.g. colors, bold fonts, etc.) from terminal output." env:"TERM==dumb,NO_COLOR"`
-	TestInt              int         `long:"test-int" desc:"Test accepting int64 CLI"`
 }
 
 type HelpOpts struct{}
@@ -94,6 +94,12 @@ func main() {
 
 		os.Exit(0)
 	} else if command == "build" {
+		if len(posArgs) > 0 {
+			argsList := strings.Join(posArgs, ", ")
+
+			errExit(1, "unrecognized flags/arguments: %v", argsList)
+		}
+
 		inputDir := Opts.BuildOpts.InputDirectory
 		outputDir := Opts.BuildOpts.OutputDirectory
 		layoutsDir := Opts.BuildOpts.LayoutsDirectory
@@ -124,9 +130,9 @@ func main() {
 			}
 
 			fmt.Println(terminalStyle("Building...", TerminalTextBold, TerminalTextGreen))
-			fmt.Printf("+ Input Directory:     %s\n", inputDir)
-			fmt.Printf("+ Output Directory:    %s\n", outputDir)
-			fmt.Printf("+ Layouts Directory:   %s\n", layoutsDir)
+			fmt.Printf("+ Input directory:     %s\n", inputDir)
+			fmt.Printf("+ Output directory:    %s\n", outputDir)
+			fmt.Printf("+ Layouts directory:   %s\n", layoutsDir)
 			fmt.Printf("+ Output minification: %s\n", minificationStatus)
 		}
 
