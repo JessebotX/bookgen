@@ -111,16 +111,26 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	// ---
 
 	if strings.TrimSpace(book.UniqueID) == "" {
-		return book, fmt.Errorf("decode book '%s': book unique ID is required and cannot be empty/only spaces.", inputDir)
+		return book, fmt.Errorf("decode book '%s': unique ID is required and cannot be empty/only spaces", inputDir)
 	}
 
 	if strings.TrimSpace(book.Title) == "" {
-		return book, fmt.Errorf("decode book '%s': book title is required and cannot be empty/only spaces.", inputDir)
+		return book, fmt.Errorf("decode book '%s': title is required and cannot be empty/only spaces", inputDir)
 	}
 
 	if strings.TrimSpace(book.LanguageCode) == "" {
-		return book, fmt.Errorf("decode book '%s': book language code is required and cannot be empty/only spaces.", inputDir)
+		return book, fmt.Errorf("decode book '%s': language code is required and cannot be empty/only spaces", inputDir)
 	}
+
+	// ---
+	// Further parsing
+	// ---
+	rawContentPath := filepath.Join(inputDir, "index.md")
+	rawContent, err := os.ReadFile(rawContentPath)
+	if err != nil {
+		return book, fmt.Errorf("decode book '%s': failed to read content file: %w", inputDir, err)
+	}
+	book.Content.Raw = rawContent
 
 	// ---
 	// Decode chapters
