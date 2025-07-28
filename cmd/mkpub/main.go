@@ -3,6 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/JessebotX/mkpub"
 )
 
 type GlobalOpts struct {
@@ -100,6 +105,51 @@ func main() {
 		fmt.Printf("%s v%s\n", Program.Name, Program.Version)
 
 		os.Exit(0)
+	} else if command == "build" {
+		inputDir := Opts.BuildOpts.InputDirectory
+		outputDir := Opts.BuildOpts.OutputDirectory
+		layoutsDir := Opts.BuildOpts.LayoutsDirectory
+
+		// ---
+		// Set defaults
+		// ---
+		if inputDir == "" {
+			inputDir = "./"
+		}
+
+		if outputDir == "" {
+			outputDir = filepath.Join(inputDir, "build")
+		}
+
+		if layoutsDir == "" {
+			layoutsDir = filepath.Join(inputDir, "layouts")
+		}
+
+		// ---
+		// Begin build
+		// ---
+		buildTimeStart := time.Now()
+
+		decodeTimeStart := time.Now()
+		collection, err := mkpub.DecodeCollection(inputDir)
+		if err != nil {
+			errExit(1, err.Error())
+		}
+		decodeTimeEnd := time.Since(decodeTimeStart)
+
+		if !Opts.NoNonEssentialOutput {
+			fmt.Printf(terminalStyle("Done decoding!", TerminalTextGreen)+" (%v)\n", decodeTimeEnd)
+		}
+
+		_ = collection
+
+		// ---
+		// End build
+		// ---
+		buildTimeEnd := time.Since(buildTimeStart)
+		if !Opts.NoNonEssentialOutput {
+			fmt.Printf(terminalStyle("Done building!", TerminalTextBold, TerminalTextGreen)+" (%v)\n", buildTimeEnd)
+		}
 	} else {
 		if len(posArgs) == 0 {
 			errExit(1, "command/argument not found.")
@@ -112,15 +162,18 @@ func main() {
 func errExit(exitCode int, format string, a ...any) {
 	fmt.Fprintf(
 		os.Stderr,
-		terminalStyle(Program.Name+" error: ", TerminalTextBold+";"+TerminalTextRed)+format+"\n",
+		terminalStyle(Program.Name+" error: ", TerminalTextBold, TerminalTextRed)+format+"\n",
 		a...,
 	)
 	os.Exit(exitCode)
 }
 
-func terminalStyle(s, code string) string {
-	if Opts.PlainOutput {
+func terminalStyle(s string, codes ...string) string {
+	if Opts.PlainOutput || len(codes) == 0 {
 		return s
 	}
+
+	code := strings.Join(codes, ";")
+
 	return "\033[" + code + "m" + s + TerminalClear
 }
