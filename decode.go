@@ -16,7 +16,7 @@ const (
 )
 
 // DecodeCollection transforms source files in inputDir into a mkpub
-// Collection.
+// [Collection].
 func DecodeCollection(inputDir string) (Collection, error) {
 	// ---
 	// Init defaults
@@ -82,7 +82,7 @@ func DecodeCollection(inputDir string) (Collection, error) {
 	return collection, nil
 }
 
-// DecodeBook transforms source files in inputDir into a mkpub Book.
+// DecodeBook transforms source files in inputDir into a mkpub [Book].
 func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	id := filepath.Base(inputDir)
 
@@ -163,7 +163,7 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	return book, nil
 }
 
-// decodeChapter transforms source file at path into a mkpub Chapter.
+// decodeChapter transforms source file at path into a mkpub [Chapter].
 func decodeChapter(path string, book *Book) (Chapter, error) {
 	id := strings.TrimSuffix(filepath.Base(path), ".md")
 
