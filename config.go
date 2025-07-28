@@ -98,6 +98,7 @@ func (b *Book) InitDefaults(uniqueID string, parent *Collection) {
 	// Defaults
 	b.Internal.Init()
 
+	b.UniqueID = uniqueID
 	b.DatePublished = time.Now()
 	b.DateModified = b.DatePublished
 
@@ -136,11 +137,11 @@ type Chapter struct {
 	Draft         bool
 }
 
-func (c *Chapter) Init(parent *Book, uniqueID, title string) {
+func (c *Chapter) InitDefaults(uniqueID string, parent *Book) {
 	// Required
 	c.Parent = parent
 	c.UniqueID = uniqueID
-	c.Title = title
+	c.Title = uniqueID
 
 	// Inherited from parent
 	c.LanguageCode = parent.LanguageCode

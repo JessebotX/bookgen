@@ -56,6 +56,29 @@ func DecodeCollection(inputDir string) (Collection, error) {
 		return collection, fmt.Errorf("decode collection '%s': collection language code is required and cannot be empty/only spaces", inputDir)
 	}
 
+	// ---
+	// Decode books
+	// ---
+	booksDir := filepath.Join(inputDir, "books")
+	bookItems, err := os.ReadDir(booksDir)
+	if err != nil {
+		return collection, fmt.Errorf("decode collection '%s': failed to read directory '%s': %w", inputDir, booksDir, err)
+	}
+
+	for _, item := range bookItems {
+		if !item.IsDir() {
+			continue
+		}
+
+		bookDir := filepath.Join(inputDir, "books", item.Name())
+		book, err := DecodeBook(bookDir, &collection)
+		if err != nil {
+			return collection, err
+		}
+
+		collection.Books = append(collection.Books, book)
+	}
+
 	return collection, nil
 }
 
@@ -66,7 +89,45 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	var book Book
 	book.InitDefaults(id, collection)
 
+	// ---
+	// Decode chapters
+	// ---
+
+	chaptersDir := filepath.Join(inputDir, "chapters")
+	chapterItems, err := os.ReadDir(chaptersDir)
+	if err != nil {
+		return book, fmt.Errorf("decode book '%s': failed to read directory '%s': %w", inputDir, chaptersDir, err)
+	}
+
+	for _, item := range chapterItems {
+		if item.IsDir() {
+			continue
+		}
+
+		if !strings.HasSuffix(item.Name(), ".md") {
+			continue
+		}
+
+		chapterPath := filepath.Join(chaptersDir, item.Name())
+		chapter, err := decodeChapter(chapterPath, &book)
+		if err != nil {
+			return book, fmt.Errorf("decode book '%s': failed to decode chapter '%s': %w", inputDir, chaptersDir, err)
+		}
+
+		book.Chapters = append(book.Chapters, chapter)
+	}
+
 	return book, nil
+}
+
+// decodeChapter transforms source file at path into a mkpub Chapter.
+func decodeChapter(path string, book *Book) (Chapter, error) {
+	id := strings.TrimSuffix(filepath.Base(path), ".md")
+
+	var chapter Chapter
+	chapter.InitDefaults(id, book)
+
+	return chapter, nil
 }
 
 func mapToStruct(m map[string]any, s any) error {
