@@ -94,16 +94,10 @@ type Book struct {
 	CoverImageName   string
 }
 
-func (b *Book) Init(parent *Collection, uniqueID, title, lang string) {
-	// Required
-	b.UniqueID = uniqueID
-	b.Title = title
-	b.LanguageCode = lang
-
+func (b *Book) InitDefaults(uniqueID string, parent *Collection) {
 	// Defaults
 	b.Internal.Init()
 
-	b.TitleSort = title
 	b.DatePublished = time.Now()
 	b.DateModified = b.DatePublished
 
@@ -113,8 +107,12 @@ func (b *Book) Init(parent *Collection, uniqueID, title, lang string) {
 		b.Internal.GenerateRSS = parent.Internal.GenerateRSS
 		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB
 
-		if strings.TrimSpace(parent.BaseURL) != "" {
-			b.BaseURL, _ = url.JoinPath(parent.BaseURL, "books", uniqueID)
+		if strings.TrimSpace(parent.BaseURL) == "" {
+			b.BaseURL, _ = url.JoinPath(parent.BaseURL, "books")
+		}
+
+		if strings.TrimSpace(b.LanguageCode) == "" {
+			b.LanguageCode = parent.LanguageCode
 		}
 	}
 }

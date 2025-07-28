@@ -63,3 +63,13 @@ func DecodeCollection(inputDir string) (Collection, error) {
 
 	return collection, nil
 }
+
+// DecodeBook transforms source files in inputDir into a mkpub Book.
+func DecodeBook(inputDir string, collection *Collection) (Book, error) {
+	id := filepath.Base(inputDir)
+
+	var book Book
+	book.InitDefaults(id, collection)
+
+	return book, nil
+}
