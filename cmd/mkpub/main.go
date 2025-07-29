@@ -153,7 +153,7 @@ func main() {
 
 		renderTimeStart := time.Now()
 
-		if err := mkpub.WriteCollectionToHTML(&collection, outputDir); err != nil {
+		if err := mkpub.WriteCollectionToHTML(&collection, outputDir, layoutsDir); err != nil {
 			errExit(1, err.Error())
 		}
 
