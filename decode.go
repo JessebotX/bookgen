@@ -1,6 +1,7 @@
 package mkpub
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -196,6 +197,32 @@ func decodeChapter(path string, book *Book) (Chapter, error) {
 
 	var chapter Chapter
 	chapter.InitDefaults(id, book)
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return chapter, err
+	}
+
+	split := bytes.SplitN(raw, []byte("---\n"), 3)
+	if len(split) == 1 {
+		split = bytes.SplitN(raw, []byte("---\r\n"), 3)
+	}
+
+	// Found frontmatter
+	if len(split) != 1 && split[0] != nil {
+		if err := yaml.Unmarshal(split[1], &chapter.Params); err != nil {
+			return chapter, err
+		}
+
+		if err := mapToStruct(chapter.Params, &chapter); err != nil {
+			return chapter, err
+		}
+	}
+
+	// ---
+	// Further parsing
+	// ---
+	chapter.Content.Raw = raw
 
 	return chapter, nil
 }
