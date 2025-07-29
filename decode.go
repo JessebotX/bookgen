@@ -2,6 +2,7 @@ package mkpub
 
 import (
 	"bufio"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,19 +24,14 @@ const (
 // DecodeCollection transforms source files in inputDir into a mkpub
 // [Collection].
 func DecodeCollection(inputDir string) (Collection, error) {
-	// ---
-	// Init defaults
-	// ---
 	var collection Collection
 	collection.InitDefaults()
 
 	// ---
+	//
 	// Read collection config
+	//
 	// ---
-
-	// Read yaml into a map and then turn into a struct using
-	// encoding/json as intermediary. Can also possibly use mapstructure
-	// package instead or a custom made mapToStruct function.
 
 	yamlData, err := os.ReadFile(filepath.Join(inputDir, CollectionConfigName))
 	if err != nil {
@@ -51,7 +47,9 @@ func DecodeCollection(inputDir string) (Collection, error) {
 	}
 
 	// ---
+	//
 	// Check requirements
+	//
 	// ---
 	if strings.TrimSpace(collection.Title) == "" {
 		return collection, fmt.Errorf("decode collection '%s': collection title is required and cannot be empty/only spaces", inputDir)
@@ -62,7 +60,9 @@ func DecodeCollection(inputDir string) (Collection, error) {
 	}
 
 	// ---
+	//
 	// Further parsing
+	//
 	// ---
 	if collection.FaviconImageName != "" {
 		if _, err := os.Stat(filepath.Join(inputDir, collection.FaviconImageName)); errors.Is(err, os.ErrNotExist) {
@@ -73,7 +73,9 @@ func DecodeCollection(inputDir string) (Collection, error) {
 	}
 
 	// ---
+	//
 	// Decode books
+	//
 	// ---
 	booksDir := filepath.Join(inputDir, "books")
 	bookItems, err := os.ReadDir(booksDir)
@@ -106,7 +108,9 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	book.InitDefaults(id, collection)
 
 	// ---
+	//
 	// Parse config
+	//
 	// ---
 
 	yamlData, err := os.ReadFile(filepath.Join(inputDir, BookConfigName))
@@ -123,7 +127,9 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	}
 
 	// ---
+	//
 	// Check requirements
+	//
 	// ---
 
 	if strings.TrimSpace(book.UniqueID) == "" {
@@ -139,7 +145,9 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	}
 
 	// ---
+	//
 	// Further parsing
+	//
 	// ---
 	if book.CoverImageName != "" {
 		if _, err := os.Stat(filepath.Join(inputDir, book.CoverImageName)); errors.Is(err, os.ErrNotExist) {
@@ -163,7 +171,9 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	book.Content.Raw = rawContent
 
 	// ---
+	//
 	// Decode chapters
+	//
 	// ---
 
 	chaptersDir := filepath.Join(inputDir, "chapters")
@@ -198,6 +208,44 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 		return book, fmt.Errorf("decode book '%s': failed to decode chapter '%s': %w", inputDir, chaptersDir, err)
 	}
 
+	// ---
+	//
+	// Sort decoded chapters (due to concurrency, unsorted slice may be
+	// random)
+	//
+	// ---
+
+	slices.SortFunc(book.Chapters, func(a, b Chapter) int {
+		if n := cmp.Compare(a.Order, b.Order); n != 0 {
+			return n
+		}
+
+		if !a.DatePublished.Equal(b.DatePublished) {
+			if a.DatePublished.After(b.DatePublished) {
+				return 1
+			} else {
+				return -1
+			}
+		}
+
+		if n := strings.Compare(a.Title, b.Title); n != 0 {
+			return n
+		}
+
+		return strings.Compare(a.UniqueID, b.UniqueID)
+	})
+
+	// Set next and previous chapters
+	for i := 0; i < len(book.Chapters); i++ {
+		if i-1 >= 0 {
+			book.Chapters[i].Previous = &book.Chapters[i-1]
+		}
+
+		if i+1 < len(book.Chapters) {
+			book.Chapters[i].Next = &book.Chapters[i+1]
+		}
+	}
+
 	return book, nil
 }
 
@@ -214,7 +262,9 @@ func decodeChapter(path string, book *Book) (Chapter, error) {
 	}
 
 	// ---
+	//
 	// Parse frontmatter at the top
+	//
 	// ---
 	scanner := bufio.NewScanner(f)
 	var yamlData string
@@ -252,7 +302,9 @@ func decodeChapter(path string, book *Book) (Chapter, error) {
 	}
 
 	// ---
+	//
 	// Further parsing
+	//
 	// ---
 	rawContent, err := os.ReadFile(path)
 	if err != nil {
@@ -264,6 +316,10 @@ func decodeChapter(path string, book *Book) (Chapter, error) {
 }
 
 func mapToStruct(m map[string]any, s any) error {
+	// Read yaml into a map and then turn into a struct using
+	// encoding/json as intermediary. Can also possibly use mapstructure
+	// package instead or a custom made mapToStruct function.
+
 	jsonData, err := json.Marshal(m)
 	if err != nil {
 		return err
