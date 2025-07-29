@@ -1,5 +1,8 @@
 ---
 title: Chapter 1_1
+tags:
+    - hello
+    - world
 ---
 
 # miniaudio.h 2
