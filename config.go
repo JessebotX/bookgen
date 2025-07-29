@@ -149,4 +149,5 @@ func (c *Chapter) InitDefaults(uniqueID string, parent *Book) {
 	// Inherited from parent
 	c.DateLastBuild = parent.DateLastBuild
 	c.LanguageCode = parent.LanguageCode
+	c.Authors = parent.Authors
 }
