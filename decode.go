@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/goccy/go-yaml"
 
@@ -149,6 +150,8 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	// Further parsing
 	//
 	// ---
+	book.Status = strings.ToLower(book.Status)
+
 	if book.CoverImageName != "" {
 		if _, err := os.Stat(filepath.Join(inputDir, book.CoverImageName)); errors.Is(err, os.ErrNotExist) {
 			return book, fmt.Errorf("decode book '%s': failed to find cover image '%s' in input directory '%s')", inputDir, filepath.Clean(book.CoverImageName), inputDir)
@@ -246,6 +249,83 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 		}
 	}
 
+	// By default, inherit date and times from chapters if not provided
+	// at the book level.
+	var youngest, latest time.Time
+	for _, chapter := range book.Chapters {
+		if chapter.DatePublished.IsZero() {
+			continue
+		}
+
+		if youngest.IsZero() {
+			youngest = chapter.DatePublished
+		}
+
+		if latest.IsZero() {
+			latest = chapter.DatePublished
+		}
+
+		if youngest.After(chapter.DatePublished) {
+			youngest = chapter.DatePublished
+		}
+
+		if latest.Before(chapter.DatePublished) {
+			latest = chapter.DatePublished
+		}
+
+		// youngest date also considers the earliest modification
+		if chapter.DateModified.IsZero() {
+			continue
+		}
+
+		if youngest.After(chapter.DateModified) {
+			youngest = chapter.DateModified
+		}
+	}
+
+	if book.DatePublishedStart.IsZero() {
+		v, exists := book.Params["published_start"]
+		if exists {
+			book.DatePublishedStart, err = parseTimeParam(v)
+			if err != nil {
+				return book, err
+			}
+		}
+
+		if !exists {
+			book.DatePublishedStart = youngest
+		}
+	}
+
+	if book.Status == BookStatusCompleted || book.Status == BookStatusInactive {
+		if book.DatePublishedEnd.IsZero() {
+			v, exists := book.Params["published_end"]
+			if !exists {
+				v, exists = book.Params["date"]
+			}
+
+			if exists {
+				book.DatePublishedEnd, err = parseTimeParam(v)
+				if err != nil {
+					return book, err
+				}
+			}
+
+			if !exists {
+				book.DatePublishedEnd = latest
+			}
+		}
+
+		if book.DatePublishedEnd.IsZero() {
+			book.DatePublishedEnd = book.DatePublishedStart
+		}
+
+		// Make start == end if one or the other is not set
+		if book.DatePublishedStart.IsZero() {
+			book.DatePublishedStart = book.DatePublishedEnd
+		}
+	}
+
 	return book, nil
 }
 
@@ -312,6 +392,34 @@ func decodeChapter(path string, book *Book) (Chapter, error) {
 	}
 	chapter.Content.Raw = rawContent
 
+	if chapter.DatePublished.IsZero() {
+		v, exists := chapter.Params["published"]
+		if !exists {
+			v, exists = chapter.Params["date"]
+		}
+
+		if exists {
+			chapter.DatePublished, err = parseTimeParam(v)
+			if err != nil {
+				return chapter, err
+			}
+		}
+	}
+
+	if chapter.DateModified.IsZero() {
+		v, exists := chapter.Params["modified"]
+		if !exists {
+			v, exists = chapter.Params["lastmod"]
+		}
+
+		if exists {
+			chapter.DatePublished, err = parseTimeParam(v)
+			if err != nil {
+				return chapter, err
+			}
+		}
+	}
+
 	return chapter, nil
 }
 
@@ -330,4 +438,48 @@ func mapToStruct(m map[string]any, s any) error {
 	}
 
 	return nil
+}
+
+func parseTimeParam(param any) (time.Time, error) {
+	switch v := param.(type) {
+	case time.Time:
+		return v, nil
+	case string:
+		date, err := guessTimeFormat(v)
+		if err != nil {
+			return time.Time{}, err
+		}
+		return date, nil
+	}
+
+	return time.Time{}, fmt.Errorf("unrecognized parameter type given for date format. Value type must be either 'string' or 'time.Time'")
+}
+
+// Convert a date string input into time. String argument must be in
+// the correct format or it will return an error.
+func guessTimeFormat(s string) (time.Time, error) {
+	formats := []string{
+		"2006",
+		"2006-01",
+		"2006-01-02",
+		"2006-01-02 15:04",
+		"2006-01-02T15:04",
+		"2006-01-02 15:04Z07:00",
+		"2006-01-02T15:04Z07:00",
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05Z07:00",
+		"2006-01-02T15:04:05Z07:00",
+	}
+
+	var errs error
+	for _, format := range formats {
+		date, err := time.Parse(format, s)
+		if err == nil {
+			return date, nil
+		}
+		errs = errors.Join(errs, err)
+	}
+
+	return time.Time{}, fmt.Errorf("unrecognized format for '%s':\n%w", s, errs)
 }

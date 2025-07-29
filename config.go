@@ -7,6 +7,13 @@ import (
 	"time"
 )
 
+const (
+	BookStatusCompleted = "completed"
+	BookStatusInactive  = "inactive"
+	BookStatusOngoing   = "ongoing"
+	BookStatusHiatus    = "hiatus"
+)
+
 var BookStatusValues = []string{"completed", "hiatus", "inactive", "ongoing"}
 
 type Content struct {
@@ -67,32 +74,32 @@ func (c *Collection) InitDefaults() {
 }
 
 type Book struct {
-	ConfigFormat     string
-	Params           map[string]any
-	Internal         Internal
-	Parent           *Collection
-	UniqueID         string
-	DateLastBuild    time.Time
-	DatePublished    time.Time
-	DateModified     time.Time
-	Chapters         []Chapter
-	Title            string
-	Subtitle         string
-	TitleSort        string
-	Status           string
-	BaseURL          string
-	Description      string
-	LanguageCode     string
-	Content          Content
-	Series           Series
-	Authors          []Author
-	AuthorsSort      string
-	Contributors     []Author
-	Mirrors          []ExternalLink
-	IDs              []string
-	Subjects         []string
-	FaviconImageName string
-	CoverImageName   string
+	ConfigFormat       string
+	Params             map[string]any
+	Internal           Internal
+	Parent             *Collection
+	UniqueID           string
+	DateLastBuild      time.Time
+	DatePublishedEnd   time.Time
+	DatePublishedStart time.Time
+	Chapters           []Chapter
+	Title              string
+	Subtitle           string
+	TitleSort          string
+	Status             string
+	BaseURL            string
+	Description        string
+	LanguageCode       string
+	Content            Content
+	Series             Series
+	Authors            []Author
+	AuthorsSort        string
+	Contributors       []Author
+	Mirrors            []ExternalLink
+	IDs                []string
+	Subjects           []string
+	FaviconImageName   string
+	CoverImageName     string
 }
 
 func (b *Book) InitDefaults(uniqueID string, parent *Collection) {
