@@ -48,6 +48,7 @@ type Series struct {
 type Collection struct {
 	ConfigFormat     string
 	Params           map[string]any
+	DateLastBuild    time.Time
 	Internal         Internal
 	Books            []Book
 	Title            string
@@ -56,14 +57,13 @@ type Collection struct {
 	LanguageCode     string
 	Content          Content
 	FaviconImageName string
-	LastBuildDate    time.Time
 }
 
 func (c *Collection) InitDefaults() {
 	c.Internal.Init()
 
 	c.LanguageCode = "en"
-	c.LastBuildDate = time.Now()
+	c.DateLastBuild = time.Now()
 }
 
 type Book struct {
@@ -72,7 +72,7 @@ type Book struct {
 	Internal         Internal
 	Parent           *Collection
 	UniqueID         string
-	LastBuildDate    time.Time
+	DateLastBuild    time.Time
 	DatePublished    time.Time
 	DateModified     time.Time
 	Chapters         []Chapter
@@ -99,12 +99,13 @@ func (b *Book) InitDefaults(uniqueID string, parent *Collection) {
 	// Defaults
 	b.Internal.Init()
 
+	b.DateLastBuild = time.Now()
 	b.UniqueID = uniqueID
-	b.LastBuildDate = time.Now()
 	b.Status = "completed"
 
 	// Inherited from parent
 	if parent != nil {
+		b.DateLastBuild = parent.DateLastBuild
 		b.Parent = parent
 		b.Internal.GenerateRSS = parent.Internal.GenerateRSS
 		b.Internal.GenerateEPUB = parent.Internal.GenerateEPUB
@@ -122,6 +123,7 @@ func (b *Book) InitDefaults(uniqueID string, parent *Collection) {
 type Chapter struct {
 	Params        map[string]any
 	Parent        *Book
+	DateLastBuild time.Time
 	DatePublished time.Time
 	DateModified  time.Time
 	Next          *Chapter
@@ -145,5 +147,6 @@ func (c *Chapter) InitDefaults(uniqueID string, parent *Book) {
 	c.Title = uniqueID
 
 	// Inherited from parent
+	c.DateLastBuild = parent.DateLastBuild
 	c.LanguageCode = parent.LanguageCode
 }
