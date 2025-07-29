@@ -1,7 +1,7 @@
 package mkpub
 
 import (
-	"bytes"
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/goccy/go-yaml"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -170,6 +172,7 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 		return book, fmt.Errorf("decode book '%s': failed to read directory '%s': %w", inputDir, chaptersDir, err)
 	}
 
+	g := new(errgroup.Group)
 	for _, item := range chapterItems {
 		if item.IsDir() {
 			continue
@@ -180,12 +183,19 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 		}
 
 		chapterPath := filepath.Join(chaptersDir, item.Name())
-		chapter, err := decodeChapter(chapterPath, &book)
-		if err != nil {
-			return book, fmt.Errorf("decode book '%s': failed to decode chapter '%s': %w", inputDir, chaptersDir, err)
-		}
+		g.Go(func() error {
+			chapter, err := decodeChapter(chapterPath, &book)
+			if err != nil {
+				return err
+			}
+			book.Chapters = append(book.Chapters, chapter)
 
-		book.Chapters = append(book.Chapters, chapter)
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return book, fmt.Errorf("decode book '%s': failed to decode chapter '%s': %w", inputDir, chaptersDir, err)
 	}
 
 	return book, nil
@@ -198,19 +208,37 @@ func decodeChapter(path string, book *Book) (Chapter, error) {
 	var chapter Chapter
 	chapter.InitDefaults(id, book)
 
-	raw, err := os.ReadFile(path)
+	f, err := os.Open(path)
 	if err != nil {
 		return chapter, err
 	}
 
-	split := bytes.SplitN(raw, []byte("---\n"), 3)
-	if len(split) == 1 {
-		split = bytes.SplitN(raw, []byte("---\r\n"), 3)
-	}
+	// ---
+	// Parse frontmatter at the top
+	// ---
+	scanner := bufio.NewScanner(f)
+	var yamlData string
 
-	// Found frontmatter
-	if len(split) != 1 && split[0] != nil {
-		if err := yaml.Unmarshal(split[1], &chapter.Params); err != nil {
+	scanner.Scan()
+	if err := scanner.Err(); err != nil {
+		return chapter, err
+	}
+	first := scanner.Text()
+
+	if strings.TrimRight(first, " ") == "---" {
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.TrimRight(line, " ") == "---" {
+				break
+			}
+
+			yamlData += line + "\n"
+		}
+		if err := scanner.Err(); err != nil {
+			return chapter, err
+		}
+
+		if err := yaml.Unmarshal([]byte(yamlData), &chapter.Params); err != nil {
 			return chapter, err
 		}
 
@@ -219,10 +247,18 @@ func decodeChapter(path string, book *Book) (Chapter, error) {
 		}
 	}
 
+	if err := f.Close(); err != nil {
+		return chapter, err
+	}
+
 	// ---
 	// Further parsing
 	// ---
-	chapter.Content.Raw = raw
+	rawContent, err := os.ReadFile(path)
+	if err != nil {
+		return chapter, err
+	}
+	chapter.Content.Raw = rawContent
 
 	return chapter, nil
 }
