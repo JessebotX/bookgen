@@ -153,7 +153,9 @@ func main() {
 
 		renderTimeStart := time.Now()
 
-		// TODO: call render function
+		if err := mkpub.WriteCollectionToHTML(&collection, outputDir); err != nil {
+			errExit(1, err.Error())
+		}
 
 		renderTimeEnd := time.Since(renderTimeStart)
 
@@ -162,9 +164,6 @@ func main() {
 		}
 
 		// COMPLETED:
-
-		_ = collection
-
 		// ---
 		// End build
 		// ---
