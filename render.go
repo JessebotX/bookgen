@@ -108,6 +108,15 @@ func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string)
 		return fmt.Errorf("write collection: failed to write to collection index file: %w", err)
 	}
 
+	if collection.FaviconImageName != "" {
+		oldFaviconPath := filepath.Join(collection.InputDirectory, collection.FaviconImageName)
+		newFaviconPath := filepath.Join(outputDir, collection.FaviconImageName)
+		if err := copyFile(oldFaviconPath, newFaviconPath); err != nil {
+			return fmt.Errorf("write collection: failed to add favicon image to output: %w", err)
+		}
+	}
+
+	// --- Write books ---
 	g := new(errgroup.Group)
 	for _, book := range collection.Books {
 		bookOutputDir := filepath.Join(outputDir, "books", book.UniqueID)
@@ -184,10 +193,20 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 		return nil
 	})
 
-	oldCoverPath := filepath.Join(book.InputDirectory, book.CoverImageName)
-	newCoverPath := filepath.Join(outputDir, book.CoverImageName)
-	if err := copyFile(oldCoverPath, newCoverPath); err != nil {
-		return fmt.Errorf("write book '%s': failed to add cover image to output: %w", book.UniqueID, err)
+	if book.CoverImageName != "" {
+		oldCoverPath := filepath.Join(book.InputDirectory, book.CoverImageName)
+		newCoverPath := filepath.Join(outputDir, book.CoverImageName)
+		if err := copyFile(oldCoverPath, newCoverPath); err != nil {
+			return fmt.Errorf("write book '%s': failed to add cover image to output: %w", book.UniqueID, err)
+		}
+	}
+
+	if book.FaviconImageName != "" {
+		oldFaviconPath := filepath.Join(book.InputDirectory, book.FaviconImageName)
+		newFaviconPath := filepath.Join(outputDir, book.FaviconImageName)
+		if err := copyFile(oldFaviconPath, newFaviconPath); err != nil {
+			return fmt.Errorf("write book '%s': failed to add favicon image to output: %w", book.UniqueID, err)
+		}
 	}
 
 	for _, chapter := range book.Chapters {
@@ -259,6 +278,7 @@ func copyFilesToDirHelper(currDir, newDir, rootDir string, excludePaths, exclude
 			continue
 		}
 
+		// Copy directories
 		if item.IsDir() {
 			if err := os.MkdirAll(newPath, 0755); err != nil {
 				return err
