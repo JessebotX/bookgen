@@ -1,7 +1,6 @@
 package mkpub
 
 import (
-	"html/template"
 	"net/url"
 	"strings"
 	"time"
@@ -17,8 +16,12 @@ const (
 var BookStatusValues = []string{"completed", "hiatus", "inactive", "ongoing"}
 
 type Content struct {
-	Raw  []byte
-	HTML template.HTML
+	Raw    []byte
+	Parsed map[string]any
+}
+
+func (c *Content) Init() {
+	c.Parsed = make(map[string]any, 1)
 }
 
 type Internal struct {
@@ -38,6 +41,10 @@ type Author struct {
 	About        Content
 	EmailAddress string
 	Links        []ExternalLink
+}
+
+func (a *Author) Init() {
+	a.About.Init()
 }
 
 type ExternalLink struct {
@@ -105,6 +112,7 @@ type Book struct {
 func (b *Book) InitDefaults(uniqueID string, parent *Collection) {
 	// Defaults
 	b.Internal.Init()
+	b.Content.Init()
 
 	b.DateLastBuild = time.Now()
 	b.UniqueID = uniqueID
@@ -148,6 +156,8 @@ type Chapter struct {
 }
 
 func (c *Chapter) InitDefaults(uniqueID string, parent *Book) {
+	c.Content.Init()
+
 	// Required
 	c.Parent = parent
 	c.UniqueID = uniqueID

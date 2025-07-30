@@ -5,5 +5,5 @@
 </header>
 
 <main>
-  {{ .Content.HTML }}
+  {{ index .Content.Parsed "html" }}
 </main>

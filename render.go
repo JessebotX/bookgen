@@ -146,6 +146,8 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 			}
 			defer fChapter.Close()
 
+			chapter.Content.Parsed["html"] = template.HTML(`<p class="test">Hello world</p>`)
+
 			if err := chapterTemplate.ExecuteTemplate(fChapter, "_chapter.html", &chapter); err != nil {
 				return err
 			}
