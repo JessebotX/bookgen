@@ -28,12 +28,7 @@ func DecodeCollection(inputDir string) (Collection, error) {
 	var collection Collection
 	collection.InitDefaults(inputDir)
 
-	// ---
-	//
-	// Read collection config
-	//
-	// ---
-
+	// --- Read collection config ---
 	yamlData, err := os.ReadFile(filepath.Join(inputDir, CollectionConfigName))
 	if err != nil {
 		return collection, fmt.Errorf("decode collection '%s': %w", inputDir, err)
@@ -47,11 +42,7 @@ func DecodeCollection(inputDir string) (Collection, error) {
 		return collection, fmt.Errorf("decode collection '%s': failed to parse config: %w", inputDir, err)
 	}
 
-	// ---
-	//
-	// Check requirements
-	//
-	// ---
+	// --- Check requirements ---
 	if strings.TrimSpace(collection.Title) == "" {
 		return collection, fmt.Errorf("decode collection '%s': collection title is required and cannot be empty/only spaces", inputDir)
 	}
@@ -60,11 +51,7 @@ func DecodeCollection(inputDir string) (Collection, error) {
 		return collection, fmt.Errorf("decode collection '%s': collection language code is required and cannot be empty/only spaces", inputDir)
 	}
 
-	// ---
-	//
-	// Further parsing
-	//
-	// ---
+	// --- Further parsing ---
 	if collection.FaviconImageName != "" {
 		if _, err := os.Stat(filepath.Join(inputDir, collection.FaviconImageName)); errors.Is(err, os.ErrNotExist) {
 			return collection, fmt.Errorf("decode collection '%s': failed to find favicon image '%s' in input directory '%s')", inputDir, filepath.Clean(collection.FaviconImageName), inputDir)
@@ -73,11 +60,7 @@ func DecodeCollection(inputDir string) (Collection, error) {
 		}
 	}
 
-	// ---
-	//
-	// Decode books
-	//
-	// ---
+	// --- Decode books ---
 	booksDir := filepath.Join(inputDir, "books")
 	bookItems, err := os.ReadDir(booksDir)
 	if err != nil {
@@ -108,11 +91,7 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	var book Book
 	book.InitDefaults(id, inputDir, collection)
 
-	// ---
-	//
-	// Parse config
-	//
-	// ---
+	// --- Parse config ---
 
 	yamlData, err := os.ReadFile(filepath.Join(inputDir, BookConfigName))
 	if err != nil {
@@ -127,11 +106,7 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 		return book, fmt.Errorf("decode book '%s': failed to parse config: %w", inputDir, err)
 	}
 
-	// ---
-	//
-	// Check requirements
-	//
-	// ---
+	// --- Check requirements ---
 
 	if strings.TrimSpace(book.UniqueID) == "" {
 		return book, fmt.Errorf("decode book '%s': unique ID is required and cannot be empty/only spaces", inputDir)
@@ -145,11 +120,8 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 		return book, fmt.Errorf("decode book '%s': language code is required and cannot be empty/only spaces", inputDir)
 	}
 
-	// ---
-	//
-	// Further parsing
-	//
-	// ---
+	// --- Further parsing ---
+
 	book.Status = strings.ToLower(book.Status)
 
 	if book.CoverImageName != "" {
@@ -173,11 +145,7 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	}
 	book.Content.Raw = rawContent
 
-	// ---
-	//
-	// Decode chapters
-	//
-	// ---
+	// --- Decode chapters ---
 
 	chaptersDir := filepath.Join(inputDir, "chapters")
 	chapterItems, err := os.ReadDir(chaptersDir)
@@ -211,12 +179,9 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 		return book, fmt.Errorf("decode book '%s': failed to decode chapter '%s': %w", inputDir, chaptersDir, err)
 	}
 
-	// ---
+	// --- Sort decoded chapters ---
 	//
-	// Sort decoded chapters (due to concurrency, unsorted slice may be
-	// random)
-	//
-	// ---
+	// due to concurrency, unsorted slice may be random
 
 	slices.SortFunc(book.Chapters, func(a, b Chapter) int {
 		if n := cmp.Compare(a.Order, b.Order); n != 0 {

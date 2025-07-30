@@ -104,9 +104,7 @@ func main() {
 		outputDir := Opts.BuildOpts.OutputDirectory
 		layoutsDir := Opts.BuildOpts.LayoutsDirectory
 
-		// ---
-		// Set defaults
-		// ---
+		// --- Set defaults ---
 		if inputDir == "" {
 			inputDir = "./"
 		}
@@ -119,9 +117,7 @@ func main() {
 			layoutsDir = filepath.Join(inputDir, "layouts")
 		}
 
-		// ---
-		// Begin build
-		// ---
+		// --- Begin build ---
 		buildTimeStart := time.Now()
 		if !Opts.NoNonEssentialOutput {
 			minificationStatus := strconv.FormatBool(Opts.BuildOpts.Minify)
@@ -163,10 +159,7 @@ func main() {
 			fmt.Printf(terminalStyle("Done rendering!", TerminalTextGreen)+" (%v)\n", renderTimeEnd)
 		}
 
-		// COMPLETED:
-		// ---
-		// End build
-		// ---
+		// --- End build ---
 		buildTimeEnd := time.Since(buildTimeStart)
 		if !Opts.NoNonEssentialOutput {
 			fmt.Printf(terminalStyle("Done building!", TerminalTextBold, TerminalTextGreen)+" (%v)\n", buildTimeEnd)

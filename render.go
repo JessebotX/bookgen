@@ -44,11 +44,7 @@ func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string)
 		return err
 	}
 
-	// ---
-	//
-	// Parse templates
-	//
-	// ---
+	// --- Parse templates ---
 	otherTemplatesPath := filepath.Join(layoutsDir, "_template_*.html")
 	collectionTemplate, err := parseTemplate(filepath.Join(layoutsDir, "index.html"), otherTemplatesPath)
 	if err != nil {
@@ -65,12 +61,7 @@ func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string)
 		return fmt.Errorf("write collection: failed to parse chapter template: %w", err)
 	}
 
-	// ---
-	//
-	// Static files
-	//
-	// ---
-
+	// --- Static files ---
 	if err := copyDirectory(layoutsDir, outputDir, []string{
 		"index.html",
 		"_book.html",
@@ -81,11 +72,7 @@ func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string)
 		return fmt.Errorf("failed to copy files to output. %w", err)
 	}
 
-	// ---
-	//
-	// Collection index
-	//
-	// ---
+	// --- Collection index ---
 	fCollection, err := os.Create(filepath.Join(outputDir, "index.html"))
 	if err != nil {
 		return fmt.Errorf("write collection: failed to create collection index file: %w", err)
@@ -166,6 +153,7 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 		return nil
 	})
 
+	// --- Cover/favicon images ---
 	if book.CoverImageName != "" {
 		oldCoverPath := filepath.Join(book.InputDirectory, book.CoverImageName)
 		newCoverPath := filepath.Join(outputDir, book.CoverImageName)
@@ -182,6 +170,7 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 		}
 	}
 
+	// --- Chapters ---
 	for _, chapter := range book.Chapters {
 		g.Go(func() error {
 			fChapter, err := os.Create(filepath.Join(chaptersOutputDir, chapter.UniqueID+".html"))
@@ -202,7 +191,6 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 			return nil
 		})
 	}
-
 	if err := g.Wait(); err != nil {
 		return fmt.Errorf("write book '%s': %w", book.UniqueID, err)
 	}
@@ -224,10 +212,10 @@ func parseTemplate(path, templatesGlob string) (*template.Template, error) {
 	return template, nil
 }
 
-func convertMarkdownToHTML(content []byte) (template.HTML, error) {
+func convertMarkdownToHTML(data []byte) (template.HTML, error) {
 	var buffer bytes.Buffer
 	context := parser.NewContext()
-	if err := md.Convert(content, &buffer, parser.WithContext(context)); err != nil {
+	if err := md.Convert(data, &buffer, parser.WithContext(context)); err != nil {
 		return template.HTML(""), err
 	}
 
