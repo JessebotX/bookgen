@@ -26,7 +26,7 @@ const (
 // [Collection].
 func DecodeCollection(inputDir string) (Collection, error) {
 	var collection Collection
-	collection.InitDefaults()
+	collection.InitDefaults(inputDir)
 
 	// ---
 	//
@@ -106,7 +106,7 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 	id := filepath.Base(inputDir)
 
 	var book Book
-	book.InitDefaults(id, collection)
+	book.InitDefaults(id, inputDir, collection)
 
 	// ---
 	//

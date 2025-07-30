@@ -65,6 +65,7 @@ type Collection struct {
 	DateLastBuild    time.Time
 	Internal         Internal
 	Books            []Book
+	InputDirectory   string
 	Title            string
 	Description      string
 	BaseURL          string
@@ -73,11 +74,12 @@ type Collection struct {
 	FaviconImageName string
 }
 
-func (c *Collection) InitDefaults() {
+func (c *Collection) InitDefaults(inputDir string) {
 	c.Internal.Init()
 
 	c.LanguageCode = "en"
 	c.DateLastBuild = time.Now()
+	c.InputDirectory = inputDir
 }
 
 type Book struct {
@@ -90,6 +92,7 @@ type Book struct {
 	DatePublishedEnd   time.Time
 	DatePublishedStart time.Time
 	Chapters           []Chapter
+	InputDirectory     string
 	Title              string
 	Subtitle           string
 	TitleSort          string
@@ -109,7 +112,7 @@ type Book struct {
 	CoverImageName     string
 }
 
-func (b *Book) InitDefaults(uniqueID string, parent *Collection) {
+func (b *Book) InitDefaults(uniqueID, inputDir string, parent *Collection) {
 	// Defaults
 	b.Internal.Init()
 	b.Content.Init()
@@ -117,6 +120,7 @@ func (b *Book) InitDefaults(uniqueID string, parent *Collection) {
 	b.DateLastBuild = time.Now()
 	b.UniqueID = uniqueID
 	b.Status = "completed"
+	b.InputDirectory = inputDir
 
 	// Inherited from parent
 	if parent != nil {

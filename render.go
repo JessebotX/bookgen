@@ -161,7 +161,7 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 
 	chaptersOutputDir := filepath.Join(outputDir, "chapters")
 	if err := os.MkdirAll(chaptersOutputDir, 0755); err != nil {
-		return fmt.Errorf("write book '%s': %w", book.Title, err)
+		return fmt.Errorf("write book '%s': %w", book.UniqueID, err)
 	}
 
 	g := new(errgroup.Group)
@@ -183,6 +183,12 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 
 		return nil
 	})
+
+	oldCoverPath := filepath.Join(book.InputDirectory, book.CoverImageName)
+	newCoverPath := filepath.Join(outputDir, book.CoverImageName)
+	if err := copyFile(oldCoverPath, newCoverPath); err != nil {
+		return fmt.Errorf("write book '%s': failed to add cover image to output: %w", book.UniqueID, err)
+	}
 
 	for _, chapter := range book.Chapters {
 		g.Go(func() error {
@@ -206,7 +212,7 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 	}
 
 	if err := g.Wait(); err != nil {
-		return fmt.Errorf("write book '%s': %w", book.Title, err)
+		return fmt.Errorf("write book '%s': %w", book.UniqueID, err)
 	}
 
 	return nil
