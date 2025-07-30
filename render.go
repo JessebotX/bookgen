@@ -1,18 +1,42 @@
 package mkpub
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"os"
 	"path/filepath"
 
+	"github.com/JessebotX/mkpub/other/meta"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
+
 	"golang.org/x/sync/errgroup"
 )
 
-func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string) error {
-	_ = collection
-	_ = layoutsDir
+var (
+	goldmarkExtensions = goldmark.WithExtensions(
+		meta.Meta,
+		extension.GFM,
+		extension.Footnote,
+		extension.Typographer,
+	)
+	md = goldmark.New(
+		goldmarkExtensions,
+		goldmark.WithParserOptions(
+			parser.WithAttribute(),
+			parser.WithAutoHeadingID(),
+		),
+		goldmark.WithRendererOptions(
+			html.WithXHTML(),
+		),
+	)
+)
 
+func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string) error {
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return err
 	}
@@ -130,6 +154,11 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 		}
 		defer fIndex.Close()
 
+		book.Content.Parsed["html"], err = convertMarkdownToHTML(book.Content.Raw)
+		if err != nil {
+			return err
+		}
+
 		if err := bookTemplate.ExecuteTemplate(fIndex, "_book.html", book); err != nil {
 			// return fmt.Errorf("write book '%s': failed to write index file: %w", book.Title, err)
 			return err
@@ -146,7 +175,10 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 			}
 			defer fChapter.Close()
 
-			chapter.Content.Parsed["html"] = template.HTML(`<p class="test">Hello world</p>`)
+			chapter.Content.Parsed["html"], err = convertMarkdownToHTML(chapter.Content.Raw)
+			if err != nil {
+				return err
+			}
 
 			if err := chapterTemplate.ExecuteTemplate(fChapter, "_chapter.html", &chapter); err != nil {
 				return err
@@ -161,4 +193,14 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 	}
 
 	return nil
+}
+
+func convertMarkdownToHTML(content []byte) (template.HTML, error) {
+	var buffer bytes.Buffer
+	context := parser.NewContext()
+	if err := md.Convert(content, &buffer, parser.WithContext(context)); err != nil {
+		return template.HTML(""), err
+	}
+
+	return template.HTML(buffer.String()), nil
 }
