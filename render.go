@@ -83,7 +83,7 @@ func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string)
 	//
 	// ---
 
-	if err := copyFilesToDir(layoutsDir, outputDir, []string{
+	if err := copyDirectory(layoutsDir, outputDir, []string{
 		"index.html",
 		"_book.html",
 		"_chapter.html",
@@ -247,11 +247,11 @@ func convertMarkdownToHTML(content []byte) (template.HTML, error) {
 	return template.HTML(buffer.String()), nil
 }
 
-func copyFilesToDir(inputDir, outputDir string, excludePaths, excludePatterns []string) error {
-	return copyFilesToDirHelper(inputDir, outputDir, inputDir, excludePaths, excludePatterns)
+func copyDirectory(sourceDir, destinationDir string, excludePaths, excludePatterns []string) error {
+	return copyDirectoryHelper(sourceDir, destinationDir, sourceDir, excludePaths, excludePatterns)
 }
 
-func copyFilesToDirHelper(currDir, newDir, rootDir string, excludePaths, excludePatterns []string) error {
+func copyDirectoryHelper(currDir, destinationDir, sourceDir string, excludePaths, excludePatterns []string) error {
 	items, err := os.ReadDir(currDir)
 	if err != nil {
 		return err
@@ -259,8 +259,8 @@ func copyFilesToDirHelper(currDir, newDir, rootDir string, excludePaths, exclude
 
 	for _, item := range items {
 		target := filepath.Join(currDir, item.Name())
-		targetFromRoot := strings.TrimLeft(strings.TrimPrefix(target, rootDir), "/\\")
-		newPath := filepath.Join(newDir, targetFromRoot)
+		targetFromRoot := strings.TrimLeft(strings.TrimPrefix(target, sourceDir), "/\\")
+		newPath := filepath.Join(destinationDir, targetFromRoot)
 
 		// Check exclusions
 		if slices.Contains(excludePaths, targetFromRoot) {
@@ -284,7 +284,7 @@ func copyFilesToDirHelper(currDir, newDir, rootDir string, excludePaths, exclude
 				return err
 			}
 
-			if err := copyFilesToDirHelper(target, newDir, rootDir, excludePaths, excludePatterns); err != nil {
+			if err := copyDirectoryHelper(target, destinationDir, sourceDir, excludePaths, excludePatterns); err != nil {
 				return err
 			}
 
