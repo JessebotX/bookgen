@@ -6,6 +6,8 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/JessebotX/mkpub/other/meta"
 
@@ -72,6 +74,22 @@ func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string)
 	chapterTemplate, err := template.ParseFiles(templateFileNames...)
 	if err != nil {
 		return fmt.Errorf("write collection: failed to parse chapter template: %w", err)
+	}
+
+	// ---
+	//
+	// Static files
+	//
+	// ---
+
+	if err := copyFilesToDir(layoutsDir, outputDir, []string{
+		"index.html",
+		"_book.html",
+		"_chapter.html",
+	}, []string{
+		"_template_*.html",
+	}); err != nil {
+		return fmt.Errorf("failed to copy files to output. %w", err)
 	}
 
 	// ---
@@ -201,4 +219,62 @@ func convertMarkdownToHTML(content []byte) (template.HTML, error) {
 	}
 
 	return template.HTML(buffer.String()), nil
+}
+
+func copyFilesToDir(inputDir, outputDir string, excludePaths, excludePatterns []string) error {
+	return copyFilesToDirHelper(inputDir, outputDir, inputDir, excludePaths, excludePatterns)
+}
+
+func copyFilesToDirHelper(currDir, newDir, rootDir string, excludePaths, excludePatterns []string) error {
+	items, err := os.ReadDir(currDir)
+	if err != nil {
+		return err
+	}
+
+	for _, item := range items {
+		target := filepath.Join(currDir, item.Name())
+		targetFromRoot := strings.TrimLeft(strings.TrimPrefix(target, rootDir), "/\\")
+		newPath := filepath.Join(newDir, targetFromRoot)
+
+		fmt.Println(target, targetFromRoot, newPath)
+
+		// Check exclusions
+		if slices.Contains(excludePaths, targetFromRoot) {
+			continue
+		}
+
+		matching := false
+		for _, pattern := range excludePatterns {
+			matching, err = filepath.Match(pattern, targetFromRoot)
+			if err != nil {
+				return err
+			}
+		}
+		if matching {
+			continue
+		}
+
+		if item.IsDir() {
+			if err := os.MkdirAll(newPath, 0755); err != nil {
+				return err
+			}
+
+			if err := copyFilesToDirHelper(target, newDir, rootDir, excludePaths, excludePatterns); err != nil {
+				return err
+			}
+
+			continue
+		}
+
+		// Copy item from old to new
+		if err := os.RemoveAll(newPath); err != nil {
+			return err
+		}
+
+		if err := os.Link(target, newPath); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
