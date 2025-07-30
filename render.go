@@ -10,8 +10,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/JessebotX/mkpub/other/meta"
-
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -22,7 +20,6 @@ import (
 
 var (
 	goldmarkExtensions = goldmark.WithExtensions(
-		meta.Meta,
 		extension.GFM,
 		extension.Footnote,
 		extension.Typographer,
@@ -141,6 +138,10 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 		}
 		defer fIndex.Close()
 
+		if book.Content.Parsed == nil {
+			book.Content.Init()
+		}
+
 		book.Content.Parsed["html"], err = convertMarkdownToHTML(book.Content.Raw)
 		if err != nil {
 			return fmt.Errorf("failed to convert index.html markdown to HTML: %w", err)
@@ -178,6 +179,10 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 				return fmt.Errorf("failed to create chapter '%s': %w", chapter.UniqueID+".html", err)
 			}
 			defer fChapter.Close()
+
+			if chapter.Content.Parsed == nil {
+				chapter.Content.Init()
+			}
 
 			chapter.Content.Parsed["html"], err = convertMarkdownToHTML(chapter.Content.Raw)
 			if err != nil {

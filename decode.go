@@ -1,7 +1,7 @@
 package mkpub
 
 import (
-	"bufio"
+	"bytes"
 	"cmp"
 	"encoding/json"
 	"errors"
@@ -301,38 +301,21 @@ func decodeChapter(path string, book *Book) (Chapter, error) {
 	var chapter Chapter
 	chapter.InitDefaults(id, book)
 
-	f, err := os.Open(path)
+	// --- Parse frontmatter at the top ---
+	full, err := os.ReadFile(path)
 	if err != nil {
 		return chapter, err
 	}
 
-	// ---
-	//
-	// Parse frontmatter at the top
-	//
-	// ---
-	scanner := bufio.NewScanner(f)
-	var yamlData string
+	var yamlData []byte
 
-	scanner.Scan()
-	if err := scanner.Err(); err != nil {
-		return chapter, err
+	parts := bytes.SplitN(full, []byte("---\r\n"), 3)
+	if len(parts) == 1 {
+		parts = bytes.SplitN(full, []byte("---\n"), 3)
 	}
-	first := scanner.Text()
 
-	if strings.TrimRight(first, " ") == "---" {
-		for scanner.Scan() {
-			line := scanner.Text()
-			if strings.TrimRight(line, " ") == "---" {
-				break
-			}
-
-			yamlData += line + "\n"
-		}
-		if err := scanner.Err(); err != nil {
-			return chapter, err
-		}
-
+	if len(parts) == 3 && len(parts[0]) == 0 {
+		yamlData = parts[1]
 		if err := yaml.Unmarshal([]byte(yamlData), &chapter.Params); err != nil {
 			return chapter, err
 		}
@@ -340,23 +323,14 @@ func decodeChapter(path string, book *Book) (Chapter, error) {
 		if err := mapToStruct(chapter.Params, &chapter); err != nil {
 			return chapter, err
 		}
+
+		chapter.Content.Raw = parts[2]
+
+	} else {
+		chapter.Content.Raw = full
 	}
 
-	if err := f.Close(); err != nil {
-		return chapter, err
-	}
-
-	// ---
-	//
-	// Further parsing
-	//
-	// ---
-	rawContent, err := os.ReadFile(path)
-	if err != nil {
-		return chapter, err
-	}
-	chapter.Content.Raw = rawContent
-
+	// --- Further parsing ---
 	if chapter.DatePublished.IsZero() {
 		v, exists := chapter.Params["published"]
 		if !exists {
