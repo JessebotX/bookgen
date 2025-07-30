@@ -2,8 +2,14 @@
   <h1>
     {{ .Title }}
   </h1>
+  {{ with .Subtitle -}}
+  <p>{{ . }}</p>
+  {{- end }}
 </header>
-
 <main>
+  {{ with .Description }}
+  <p>{{ . }}</p>
+  {{ end }}
+
   {{ index .Content.Parsed "html" }}
 </main>
