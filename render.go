@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -265,13 +266,29 @@ func copyFilesToDirHelper(currDir, newDir, rootDir string, excludePaths, exclude
 		}
 
 		// Copy item from old to new
-		if err := os.RemoveAll(newPath); err != nil {
+		if err := copyFile(target, newPath); err != nil {
 			return err
 		}
+	}
 
-		if err := os.Link(target, newPath); err != nil {
-			return err
-		}
+	return nil
+}
+
+func copyFile(source, destination string) error {
+	in, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(destination)
+	if err != nil {
+		return nil
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, in); err != nil {
+		return err
 	}
 
 	return nil
