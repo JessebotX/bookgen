@@ -162,12 +162,6 @@ func WriteBookToHTML(book *Book, outputDir, layoutsDir string) error {
 }
 
 func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *template.Template, chapterTemplate *template.Template) error {
-	_ = book
-	_ = outputDir
-	_ = layoutsDir
-	_ = bookTemplate
-	_ = chapterTemplate
-
 	chaptersOutputDir := filepath.Join(outputDir, "chapters")
 	if err := os.MkdirAll(chaptersOutputDir, 0755); err != nil {
 		return fmt.Errorf("write book '%s': %w", book.UniqueID, err)
