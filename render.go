@@ -149,19 +149,17 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 	g.Go(func() error {
 		fIndex, err := os.Create(filepath.Join(outputDir, "index.html"))
 		if err != nil {
-			// return fmt.Errorf("write book '%s': failed to create index file: %w", book.Title, err)
-			return err
+			return fmt.Errorf("failed to create index.html: %w", err)
 		}
 		defer fIndex.Close()
 
 		book.Content.Parsed["html"], err = convertMarkdownToHTML(book.Content.Raw)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to convert index.html markdown to HTML: %w", err)
 		}
 
 		if err := bookTemplate.ExecuteTemplate(fIndex, "_book.html", book); err != nil {
-			// return fmt.Errorf("write book '%s': failed to write index file: %w", book.Title, err)
-			return err
+			return fmt.Errorf("failed to write index.html: %w", err)
 		}
 
 		return nil
@@ -171,17 +169,17 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 		g.Go(func() error {
 			fChapter, err := os.Create(filepath.Join(chaptersOutputDir, chapter.UniqueID+".html"))
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to create chapter '%s': %w", chapter.UniqueID+".html", err)
 			}
 			defer fChapter.Close()
 
 			chapter.Content.Parsed["html"], err = convertMarkdownToHTML(chapter.Content.Raw)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to convert chapter '%s' markdown to HTML: %w", chapter.UniqueID+".html", err)
 			}
 
 			if err := chapterTemplate.ExecuteTemplate(fChapter, "_chapter.html", &chapter); err != nil {
-				return err
+				return fmt.Errorf("failed to write chapter '%s': %w", chapter.UniqueID+".html", err)
 			}
 
 			return nil
