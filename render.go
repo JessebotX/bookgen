@@ -236,8 +236,6 @@ func copyFilesToDirHelper(currDir, newDir, rootDir string, excludePaths, exclude
 		targetFromRoot := strings.TrimLeft(strings.TrimPrefix(target, rootDir), "/\\")
 		newPath := filepath.Join(newDir, targetFromRoot)
 
-		fmt.Println(target, targetFromRoot, newPath)
-
 		// Check exclusions
 		if slices.Contains(excludePaths, targetFromRoot) {
 			continue
