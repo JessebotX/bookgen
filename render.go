@@ -49,30 +49,18 @@ func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string)
 	// Parse templates
 	//
 	// ---
-	collectionTemplatePath := filepath.Join(layoutsDir, "index.html")
-	bookTemplatePath := filepath.Join(layoutsDir, "_book.html")
-	chapterTemplatePath := filepath.Join(layoutsDir, "_chapter.html")
-
-	templateFileNames := []string{collectionTemplatePath}
-	fileNames, err := filepath.Glob(filepath.Join(layoutsDir, "_template_*.html"))
-	if err == nil {
-		templateFileNames = append(templateFileNames, fileNames...)
-	}
-
-	templateFileNames[0] = collectionTemplatePath
-	collectionTemplate, err := template.ParseFiles(templateFileNames...)
+	otherTemplatesPath := filepath.Join(layoutsDir, "_template_*.html")
+	collectionTemplate, err := parseTemplate(filepath.Join(layoutsDir, "index.html"), otherTemplatesPath)
 	if err != nil {
 		return fmt.Errorf("write collection: failed to parse collection template: %w", err)
 	}
 
-	templateFileNames[0] = bookTemplatePath
-	bookTemplate, err := template.ParseFiles(templateFileNames...)
+	bookTemplate, err := parseTemplate(filepath.Join(layoutsDir, "_book.html"), otherTemplatesPath)
 	if err != nil {
 		return fmt.Errorf("write collection: failed to parse book template: %w", err)
 	}
 
-	templateFileNames[0] = chapterTemplatePath
-	chapterTemplate, err := template.ParseFiles(templateFileNames...)
+	chapterTemplate, err := parseTemplate(filepath.Join(layoutsDir, "_chapter.html"), otherTemplatesPath)
 	if err != nil {
 		return fmt.Errorf("write collection: failed to parse chapter template: %w", err)
 	}
@@ -137,23 +125,14 @@ func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string)
 }
 
 func WriteBookToHTML(book *Book, outputDir, layoutsDir string) error {
-	bookTemplatePath := filepath.Join(layoutsDir, "_book.html")
-	chapterTemplatePath := filepath.Join(layoutsDir, "_chapter.html")
+	otherTemplatesPath := filepath.Join(layoutsDir, "_template_*.html")
 
-	templateFileNames := []string{bookTemplatePath}
-	fileNames, err := filepath.Glob(filepath.Join(layoutsDir, "_template_*.html"))
-	if err == nil {
-		templateFileNames = append(templateFileNames, fileNames...)
-	}
-
-	templateFileNames[0] = bookTemplatePath
-	bookTemplate, err := template.ParseFiles(templateFileNames...)
+	bookTemplate, err := parseTemplate(filepath.Join(layoutsDir, "_book.html"), otherTemplatesPath)
 	if err != nil {
 		return fmt.Errorf("write book '%s': failed to parse book template: %w", book.UniqueID, err)
 	}
 
-	templateFileNames[0] = chapterTemplatePath
-	chapterTemplate, err := template.ParseFiles(templateFileNames...)
+	chapterTemplate, err := parseTemplate(filepath.Join(layoutsDir, "_chapter.html"), otherTemplatesPath)
 	if err != nil {
 		return fmt.Errorf("write book '%s': failed to parse chapter template: %w", book.UniqueID, err)
 	}
@@ -229,6 +208,20 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 	}
 
 	return nil
+}
+
+func parseTemplate(path, templatesGlob string) (*template.Template, error) {
+	templateFileNames := []string{path}
+	fileNames, err := filepath.Glob(templatesGlob)
+	if err == nil {
+		templateFileNames = append(templateFileNames, fileNames...)
+	}
+
+	template, err := template.ParseFiles(templateFileNames...)
+	if err != nil {
+		return nil, err
+	}
+	return template, nil
 }
 
 func convertMarkdownToHTML(content []byte) (template.HTML, error) {
