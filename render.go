@@ -66,7 +66,7 @@ func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string)
 	}, []string{
 		"_template_*.html",
 	}); err != nil {
-		return fmt.Errorf("failed to copy files to output. %w", err)
+		return fmt.Errorf("write collection: failed to copy files to output: %w", err)
 	}
 
 	// --- Collection index ---
@@ -94,7 +94,7 @@ func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string)
 		bookOutputDir := filepath.Join(outputDir, "books", book.UniqueID)
 
 		g.Go(func() error {
-			if err := writeBookToHTML(&book, bookOutputDir, "", bookTemplate, chapterTemplate); err != nil {
+			if err := writeBookToHTML(&book, bookOutputDir, bookTemplate, chapterTemplate); err != nil {
 				return err
 			}
 
@@ -121,10 +121,20 @@ func WriteBookToHTML(book *Book, outputDir, layoutsDir string) error {
 		return fmt.Errorf("write book '%s': failed to parse chapter template: %w", book.UniqueID, err)
 	}
 
-	return writeBookToHTML(book, outputDir, layoutsDir, bookTemplate, chapterTemplate)
+	if err := copyDirectory(layoutsDir, outputDir, []string{
+		"index.html",
+		"_book.html",
+		"_chapter.html",
+	}, []string{
+		"_template_*.html",
+	}); err != nil {
+		return fmt.Errorf("write book '%s': failed to copy files to output: %w", book.UniqueID, err)
+	}
+
+	return writeBookToHTML(book, outputDir, bookTemplate, chapterTemplate)
 }
 
-func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *template.Template, chapterTemplate *template.Template) error {
+func writeBookToHTML(book *Book, outputDir string, bookTemplate *template.Template, chapterTemplate *template.Template) error {
 	chaptersOutputDir := filepath.Join(outputDir, "chapters")
 	if err := os.MkdirAll(chaptersOutputDir, 0755); err != nil {
 		return fmt.Errorf("write book '%s': %w", book.UniqueID, err)
