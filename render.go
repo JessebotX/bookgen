@@ -57,17 +57,17 @@ func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string)
 	// ---
 	fCollection, err := os.Create(filepath.Join(outputDir, "index.html"))
 	if err != nil {
-		return fmt.Errorf("write collection: failed to create collection html output: %w", err)
+		return fmt.Errorf("write collection: failed to create collection index file: %w", err)
 	}
 	defer fCollection.Close()
 
 	if err := collectionTemplate.ExecuteTemplate(fCollection, "index.html", collection); err != nil {
-		return fmt.Errorf("write collection: failed to write collection index file: %w", err)
+		return fmt.Errorf("write collection: failed to write to collection index file: %w", err)
 	}
 
 	g := new(errgroup.Group)
 	for _, book := range collection.Books {
-		bookOutputDir := filepath.Join(outputDir, "books")
+		bookOutputDir := filepath.Join(outputDir, "books", book.UniqueID)
 
 		g.Go(func() error {
 			if err := writeBookToHTML(&book, bookOutputDir, "", bookTemplate, chapterTemplate); err != nil {
@@ -78,7 +78,7 @@ func WriteCollectionToHTML(collection *Collection, outputDir, layoutsDir string)
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return fmt.Errorf("write collection: %w", err)
+		return err
 	}
 
 	return nil
@@ -115,6 +115,48 @@ func writeBookToHTML(book *Book, outputDir, layoutsDir string, bookTemplate *tem
 	_ = layoutsDir
 	_ = bookTemplate
 	_ = chapterTemplate
+
+	chaptersOutputDir := filepath.Join(outputDir, "chapters")
+	if err := os.MkdirAll(chaptersOutputDir, 0755); err != nil {
+		return fmt.Errorf("write book '%s': %w", book.Title, err)
+	}
+
+	g := new(errgroup.Group)
+	g.Go(func() error {
+		fIndex, err := os.Create(filepath.Join(outputDir, "index.html"))
+		if err != nil {
+			// return fmt.Errorf("write book '%s': failed to create index file: %w", book.Title, err)
+			return err
+		}
+		defer fIndex.Close()
+
+		if err := bookTemplate.ExecuteTemplate(fIndex, "_book.html", book); err != nil {
+			// return fmt.Errorf("write book '%s': failed to write index file: %w", book.Title, err)
+			return err
+		}
+
+		return nil
+	})
+
+	for _, chapter := range book.Chapters {
+		g.Go(func() error {
+			fChapter, err := os.Create(filepath.Join(chaptersOutputDir, chapter.UniqueID+".html"))
+			if err != nil {
+				return err
+			}
+			defer fChapter.Close()
+
+			if err := chapterTemplate.ExecuteTemplate(fChapter, "_chapter.html", &chapter); err != nil {
+				return err
+			}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("write book '%s': %w", book.Title, err)
+	}
 
 	return nil
 }
