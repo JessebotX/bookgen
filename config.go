@@ -44,6 +44,7 @@ type Author struct {
 	Name         string
 	About        Content
 	EmailAddress string
+	Role         string
 	Links        []ExternalLink
 }
 
