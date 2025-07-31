@@ -31,7 +31,6 @@ type BuildOpts struct {
 	OutputDirectory  string `long:"output-directory" short:"o" desc:"Path to directory containing compiled output files/formats for distribution."`
 	LayoutsDirectory string `long:"layouts-directory" desc:"Path to directory containing files that lay out output formats."`
 	Minify           bool   `long:"minify" desc:"Minify output of supported file formats."`
-	JSON             bool   `long:"json" desc:"Output distributable contents as JSON instead of static files."`
 }
 
 type InitOpts struct {
