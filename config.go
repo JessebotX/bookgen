@@ -112,7 +112,7 @@ type Book struct {
 	Contributors       []Author
 	Mirrors            []ExternalLink
 	IDs                []string
-	Subjects           []string
+	Tags               []string
 	FaviconImageName   string
 	CoverImageName     string
 }
