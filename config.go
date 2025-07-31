@@ -24,6 +24,10 @@ func (c *Content) Init() {
 	c.Parsed = make(map[string]any, 1)
 }
 
+func (c *Content) Format(key string) any {
+	return c.Parsed[key]
+}
+
 type Internal struct {
 	GenerateEPUB bool
 	GenerateRSS  bool
