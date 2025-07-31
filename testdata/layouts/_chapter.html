@@ -10,6 +10,7 @@
   {{ with .Description }}
   <p>{{ . }}</p>
   {{ end }}
-
-  {{ index .Content.Parsed "html" }}
+  <div class="content">
+  {{ .Content.Format "html" }}
+  </div>
 </main>
