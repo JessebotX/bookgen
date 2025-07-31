@@ -13,7 +13,12 @@ const (
 	BookStatusHiatus    = "hiatus"
 )
 
-var BookStatusValues = []string{"completed", "hiatus", "inactive", "ongoing"}
+var BookStatusValues = []string{
+	BookStatusCompleted,
+	BookStatusHiatus,
+	BookStatusInactive,
+	BookStatusOngoing,
+}
 
 type Content struct {
 	Raw    []byte
