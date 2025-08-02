@@ -44,11 +44,12 @@ func (i *Internal) Init() {
 }
 
 type Author struct {
-	Params       map[string]any
+	Params  map[string]any
+	Content Content
+
 	ID           string
 	Name         string
 	About        string
-	Content      Content
 	EmailAddress string
 	Role         string
 	Links        []ExternalLink
@@ -59,9 +60,9 @@ func (a *Author) Init() {
 }
 
 type ExternalLink struct {
-	Name        string
-	Address     string
-	IsHyperlink bool
+	Name           string
+	Address        string
+	IsAddressPlain bool
 }
 
 type Series struct {
@@ -71,17 +72,18 @@ type Series struct {
 }
 
 type Collection struct {
-	ConfigFormat     string
-	Params           map[string]any
-	DateLastBuild    time.Time
+	Params         map[string]any
+	DateLastBuild  time.Time
+	InputDirectory string
+	Content        Content
+
+	Format           string
 	Internal         Internal
 	Books            []Book
-	InputDirectory   string
 	Title            string
 	Description      string
 	BaseURL          string
 	LanguageCode     string
-	Content          Content
 	FaviconImageName string
 }
 
@@ -94,16 +96,18 @@ func (c *Collection) InitDefaults(inputDir string) {
 }
 
 type Book struct {
-	ConfigFormat       string
-	Params             map[string]any
-	Internal           Internal
-	Parent             *Collection
-	UniqueID           string
-	DateLastBuild      time.Time
+	Params         map[string]any
+	Internal       Internal
+	Parent         *Collection
+	UniqueID       string
+	DateLastBuild  time.Time
+	Chapters       []Chapter
+	InputDirectory string
+	Content        Content
+
+	Format             string
 	DatePublishedEnd   time.Time
 	DatePublishedStart time.Time
-	Chapters           []Chapter
-	InputDirectory     string
 	Title              string
 	Subtitle           string
 	TitleSort          string
@@ -111,7 +115,6 @@ type Book struct {
 	BaseURL            string
 	Description        string
 	LanguageCode       string
-	Content            Content
 	Series             Series
 	Authors            []Author
 	AuthorsSort        string
@@ -154,16 +157,17 @@ type Chapter struct {
 	Params        map[string]any
 	Parent        *Book
 	DateLastBuild time.Time
-	DatePublished time.Time
-	DateModified  time.Time
 	Next          *Chapter
 	Previous      *Chapter
 	UniqueID      string
+	Content       Content
+
+	DatePublished time.Time
+	DateModified  time.Time
 	Title         string
 	Subtitle      string
 	Description   string
 	LanguageCode  string
-	Content       Content
 	Authors       []Author
 	Mirrors       []ExternalLink
 	Order         int
