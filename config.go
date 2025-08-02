@@ -47,14 +47,15 @@ type Author struct {
 	Params       map[string]any
 	ID           string
 	Name         string
-	About        Content
+	About        string
+	Content      Content
 	EmailAddress string
 	Role         string
 	Links        []ExternalLink
 }
 
 func (a *Author) Init() {
-	a.About.Init()
+	a.Content.Init()
 }
 
 type ExternalLink struct {

@@ -140,7 +140,27 @@ func writeBookToHTML(book *Book, outputDir string, bookTemplate *template.Templa
 		return fmt.Errorf("write book '%s': %w", book.UniqueID, err)
 	}
 
-	g := new(errgroup.Group)
+	// --- Authors ---
+	g := errgroup.Group{}
+	g.Go(func() error {
+		for i := range book.Authors {
+			if book.Authors[i].Content.Parsed == nil {
+				book.Authors[i].Content.Init()
+			}
+			var err error
+			book.Authors[i].Content.Parsed["html"], err = convertMarkdownToHTML(book.Authors[i].Content.Raw)
+			if err != nil {
+				return fmt.Errorf("author '%s': failed to convert 'About' markdown to HTML: %w", book.Authors[i].Name, err)
+			}
+		}
+
+		return nil
+	})
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("write book '%s': %w", book.UniqueID, err)
+	}
+
+	g = errgroup.Group{}
 	g.Go(func() error {
 		fIndex, err := os.Create(filepath.Join(outputDir, "index.html"))
 		if err != nil {
@@ -151,7 +171,6 @@ func writeBookToHTML(book *Book, outputDir string, bookTemplate *template.Templa
 		if book.Content.Parsed == nil {
 			book.Content.Init()
 		}
-
 		book.Content.Parsed["html"], err = convertMarkdownToHTML(book.Content.Raw)
 		if err != nil {
 			return fmt.Errorf("failed to convert index.html markdown to HTML: %w", err)

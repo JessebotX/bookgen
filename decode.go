@@ -108,6 +108,16 @@ func DecodeBook(inputDir string, collection *Collection) (Book, error) {
 
 	// --- Check requirements ---
 
+	for i := range book.Authors {
+		if strings.TrimSpace(book.Authors[i].Name) == "" {
+			return book, fmt.Errorf("decode book '%s': missing required name for author #%d", inputDir, i)
+		}
+
+		if strings.TrimSpace(book.Authors[i].About) != "" {
+			book.Authors[i].Content.Raw = []byte(book.Authors[i].About)
+		}
+	}
+
 	if strings.TrimSpace(book.UniqueID) == "" {
 		return book, fmt.Errorf("decode book '%s': unique ID is required and cannot be empty/only spaces", inputDir)
 	}
