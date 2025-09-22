@@ -70,7 +70,7 @@ func (b BuildCommand) Run(ctx *Context) error {
 		fmt.Println("GENERATING STATIC WEBSITE...")
 	}
 
-	if err := pubhtml.RenderBook(&book, inputDir, outputDir, layoutsDir); err != nil {
+	if err := pubhtml.RenderBook(&book, inputDir, outputDir, layoutsDir, b.Minify); err != nil {
 		return err
 	}
 
