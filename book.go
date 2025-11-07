@@ -11,18 +11,8 @@ import (
 var (
 	ErrBookMissingLanguageCode = errors.New("missing LanguageCode")
 	ErrBookMissingUniqueID     = errors.New("missing UniqueID (value must contain at least 1 non-space character)")
-	ErrBookMissingTitles       = errors.New("missing at least 1 title in Titles")
+	ErrBookMissingTitle        = errors.New("missing Title")
 )
-
-type ErrBookDuplicateTitles struct {
-	Duplicate  string
-	Index      int
-	OtherIndex int
-}
-
-func (e ErrBookDuplicateTitles) Error() string {
-	return fmt.Sprintf("duplicate title \"%s\" found in Titles in entry numbers %d and %d", e.Duplicate, e.Index, e.OtherIndex)
-}
 
 type ErrBookEmptyTag struct {
 	Input string
@@ -39,20 +29,10 @@ func (e ErrBookEmptyTag) Error() string {
 
 // Book represents a written work, which generally has an ordered list of 1 or more [Chapter]s.
 type Book struct {
-	UniqueID string `json:"unique_id"`
-
-	// A list of titles of the book. The first title specified
-	// is considered the primary title while the rest are considered
-	// as alternate titles.
-	//
-	// USAGE
-	//
-	// titles:
-	//   - "Main Title"        # required
-	//   - "Alternate Title 1" # optional
-	//   - "Alternate Title 2" # optional
-	Titles             []string       `json:"titles"`
+	UniqueID           string         `json:"unique_id"`
+	Title              string         `json:"title"`
 	Subtitle           string         `json:"subtitle"`
+	TitlesAlternate    []string       `json:"titles_alternate"`
 	Description        string         `json:"description"`
 	Tagline            string         `json:"tagline"`
 	Content            Content        `json:"content"`
@@ -77,10 +57,6 @@ type Book struct {
 	Extra              map[string]any `json:"extra"`
 
 	InputPath string
-}
-
-func (b Book) Title() string {
-	return b.Titles[0]
 }
 
 func (b *Book) SetInputPath(inputPath string) error {
@@ -111,21 +87,6 @@ func (b *Book) SetDatePublishedEndFromString(input string) error {
 	*b.DatePublishedEnd = t
 
 	return nil
-}
-
-func (b Book) AlternateTitles() []string {
-	if len(b.Titles) == 1 {
-		return nil
-	}
-
-	var titles []string
-
-	for i := 1; i < len(b.Titles); i++ {
-		title := b.Titles[i]
-		titles = append(titles, title)
-	}
-
-	return titles
 }
 
 func (b *Book) SetUniqueID(uniqueID string) {
@@ -181,30 +142,20 @@ func (b *Book) EnsureValid() error {
 	b.SetUniqueID(b.UniqueID)
 
 	// use uniqueID as a title if there are no titles
-	if len(b.Titles) == 0 && b.UniqueID != "" {
-		b.Titles = append(b.Titles, b.UniqueID)
+	if b.Title == "" && b.UniqueID != "" {
+		b.Title = b.UniqueID
 	}
 
 	if b.UniqueID == "" {
 		return ErrBookMissingUniqueID
 	}
 
-	if len(b.Titles) == 0 {
-		return ErrBookMissingTitles
+	if b.Title == "" {
+		return ErrBookMissingTitle
 	}
 
 	if b.LanguageCode == "" {
 		return ErrBookMissingLanguageCode
-	}
-
-	// error when duplicates are found
-	for i, title := range b.Titles {
-		for j := i + 1; j < len(b.Titles); j++ {
-			other := b.Titles[j]
-			if title == other {
-				return ErrBookDuplicateTitles{Duplicate: title, Index: i + 1, OtherIndex: j + 1}
-			}
-		}
 	}
 
 	var profiles []Profile

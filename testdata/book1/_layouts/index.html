@@ -4,12 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<meta name="description" property="og:description" content="{{ .Description }}">
+{{ with .Description }}
+<meta name="description" property="og:description" content="{{ . }}">
+{{ end }}
 
 <meta name="title" property="og:title" content="{{ .Title }}">
 <title>{{ .Title }}</title>
 
 <h1>{{ .Title }}</h1>
+
+{{ with .Series }}
+<ul>
+	{{ range . }}
+		<li>{{ .Title }} {{ with .Number }}#{{ . }}{{ end }}</li>
+	{{ end }}
+</ul>
+{{ end }}
 
 <div>
 	{{ .Content.Format "html" }}

@@ -1,4 +1,4 @@
-package pub
+package html
 
 import (
 	"bytes"
@@ -7,8 +7,17 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/JessebotX/pub"
+
+	"github.com/tdewolff/minify/v2"
+	mincss "github.com/tdewolff/minify/v2/css"
+	minhtml "github.com/tdewolff/minify/v2/html"
+	minjs "github.com/tdewolff/minify/v2/js"
+	minsvg "github.com/tdewolff/minify/v2/svg"
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -38,7 +47,16 @@ var (
 	)
 )
 
-func WriteBookToStaticSite(book *Book, inputDir, outputDir, layoutsDir string) error {
+func minifier() *minify.M {
+	result := minify.New()
+	result.AddFunc("text/css", mincss.Minify)
+	result.AddFunc("text/html", minhtml.Minify)
+	result.AddFunc("image/svg+xml", minsvg.Minify)
+	result.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), minjs.Minify)
+	return result
+}
+
+func RenderBook(book *pub.Book, inputDir, outputDir, layoutsDir string, minify bool) error {
 	if err := os.MkdirAll(outputDir, defaultDirPerms); err != nil {
 		return fmt.Errorf("[WRITE BOOK] \"%s\": %w", inputDir, err)
 	}
@@ -94,10 +112,16 @@ func WriteBookToStaticSite(book *Book, inputDir, outputDir, layoutsDir string) e
 		}
 	}
 
+	if minify {
+		if err := minifyOutputFiles(outputDir); err != nil {
+			return fmt.Errorf("[WRITE BOOK] \"%s\": minify: %w", inputDir, err)
+		}
+	}
+
 	return nil
 }
 
-func writeChapterToStaticSite(chapter *Chapter, inputPath, outputPath string, tpl *template.Template) error {
+func writeChapterToStaticSite(chapter *pub.Chapter, inputPath, outputPath string, tpl *template.Template) error {
 	parsedHTML, err := convertMarkdownToHTML(chapter.Content.Raw)
 	if err != nil {
 		return fmt.Errorf("[WRITE CHAPTER] \"%s\": %w", inputPath, err)
@@ -182,6 +206,61 @@ func copyFile(sourcePath, destinationPath string) error {
 	defer out.Close()
 
 	if _, err := io.Copy(out, in); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func minifyOutputFiles(outputDir string) error {
+	m := minifier()
+	if err := filepath.WalkDir(outputDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() &&
+			!(filepath.Ext(path) == ".html") &&
+			!(filepath.Ext(path) == ".css") &&
+			!(filepath.Ext(path) == ".js") &&
+			!(filepath.Ext(path) == ".svg") {
+			return nil
+		}
+
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		var mediatype string
+		switch filepath.Ext(path) {
+		case ".html":
+			mediatype = "text/html"
+		case ".css":
+			mediatype = "text/css"
+		case ".js":
+			mediatype = "application/javascript"
+		case ".svg":
+			mediatype = "image/svg+xml"
+		default:
+			panic("unknown file type for minifying")
+		}
+
+		b, err := m.Bytes(mediatype, data)
+		if err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(path, b, defaultFilePerms); err != nil {
+			return err
+		}
+
+		// if err := m.Minify(mediatype, f, f); err != nil {
+		// 	return err
+		// }
+
+		return nil
+	}); err != nil {
 		return err
 	}
 

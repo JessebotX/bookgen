@@ -1,6 +1,6 @@
 unique_id: lipsum
-titles:
-  - Lipsum
+title: Lipsum
+titles_alternate:
   - Experimentum
   - 実験
 subtitle: The Lorem Ipsum Book
@@ -16,6 +16,9 @@ url: "https://example.com"
 language_code: en
 date_published_start: "2025-09-08"
 date_published_end: "2025-09-09"
+series:
+  - title: Testing
+    number: 1.25
 copyright:
   notice: "© 2025. Licensed under CC0-1.0."
   licenses:

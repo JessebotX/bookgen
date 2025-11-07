@@ -6,7 +6,7 @@ GOLINTEXE = staticcheck
 GOLINTFLAGS =
 GOLINTINPUT = ./...
 
-SRC = *.go cmd/pub/*.go
+SRC = *.go cmd/pub/*.go renderer/html/*.go
 BIN = pub
 TESTDATAPATH = testdata/book1
 
